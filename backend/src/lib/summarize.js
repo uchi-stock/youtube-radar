@@ -9,27 +9,25 @@ const SYSTEM_PROMPT = `あなたはYouTube動画の文字起こしを要約す�
 - importance: 情報としての重要度（5段階、5が最重要）
 - recommendation: ユーザーが実際に動画を視聴する価値（5段階、5が最も推奨）`;
 
+const GEMINI_MODEL = "gemini-2.5-flash";
+
 export async function summarizeTranscript(title, transcript, apiKey, { fetchImpl = fetch } = {}) {
   const truncated = transcript.slice(0, MAX_TRANSCRIPT_CHARS);
-  const res = await fetchImpl("https://api.anthropic.com/v1/messages", {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetchImpl(url, {
     method: "POST",
-    headers: {
-      "content-type": "application/json",
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-    },
+    headers: { "content-type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-5",
-      max_tokens: 512,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: `動画タイトル: ${title}\n\n文字起こし:\n${truncated}` }],
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [{ parts: [{ text: `動画タイトル: ${title}\n\n文字起こし:\n${truncated}` }] }],
+      generationConfig: { responseMimeType: "application/json" },
     }),
   });
   if (!res.ok) {
     throw new Error(`LLM summarize failed: ${res.status}`);
   }
   const data = await res.json();
-  const text = data.content?.[0]?.text ?? "";
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   const parsed = JSON.parse(text);
   return {
     summary: parsed.summary,

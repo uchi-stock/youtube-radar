@@ -8,7 +8,7 @@ function jsonResponse(body, ok = true) {
 const channels = [{ channelId: "UC1", name: "テストチャンネル", enabled: true }];
 const env = {
   YOUTUBE_API_KEY: "yt-key",
-  ANTHROPIC_API_KEY: "llm-key",
+  GEMINI_API_KEY: "llm-key",
   LINE_CHANNEL_ACCESS_TOKEN: "line-token",
   LINE_USER_ID: "line-user",
 };
@@ -44,9 +44,15 @@ describe("runPipeline", () => {
       // LLM summarize
       .mockResolvedValueOnce(
         jsonResponse({
-          content: [
+          candidates: [
             {
-              text: JSON.stringify({ summary: ["要点1", "要点2", "要点3"], importance: 4, recommendation: 5 }),
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({ summary: ["要点1", "要点2", "要点3"], importance: 4, recommendation: 5 }),
+                  },
+                ],
+              },
             },
           ],
         }),
@@ -63,9 +69,58 @@ describe("runPipeline", () => {
       logger: { error: vi.fn(), warn: vi.fn() },
     });
 
-    expect(results).toEqual([{ videoId: "v1", status: "notified" }]);
+    expect(results).toEqual([{ videoId: "v1", status: "reported", lineNotified: true }]);
     expect(processedIds.has("v1")).toBe(true);
     expect(fetchImpl).toHaveBeenCalledTimes(5);
+  });
+
+  it("LINE未設定でも要約結果を処理済みとして記録し、LINE通知のみスキップする", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ items: [{ contentDetails: { relatedPlaylists: { uploads: "PL1" } } }] }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [
+            {
+              snippet: { resourceId: { videoId: "v1" }, title: "テスト動画", publishedAt: "2026-09-01T00:00:00Z" },
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => '<text start="0">本文</text>',
+      })
+      .mockResolvedValueOnce(
+        jsonResponse({
+          candidates: [
+            {
+              content: {
+                parts: [{ text: JSON.stringify({ summary: ["要点1", "要点2", "要点3"], importance: 4, recommendation: 5 }) }],
+              },
+            },
+          ],
+        }),
+      );
+
+    const processedIds = new Set();
+    const warn = vi.fn();
+    const results = await runPipeline({
+      channels,
+      processedIds,
+      env: { ...env, LINE_CHANNEL_ACCESS_TOKEN: undefined, LINE_USER_ID: undefined },
+      deps: { fetchImpl },
+      logger: { error: vi.fn(), warn },
+    });
+
+    expect(results).toEqual([{ videoId: "v1", status: "reported", lineNotified: false }]);
+    expect(processedIds.has("v1")).toBe(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("LINE通知をスキップしました"));
+    // LINE pushの呼び出しが発生していないこと（4回目まででfetchが止まっている）
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
   });
 
   it("既に処理済みの動画は再通知しない", async () => {

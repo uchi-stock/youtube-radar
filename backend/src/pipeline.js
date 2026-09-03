@@ -2,6 +2,7 @@ import { fetchLatestVideos } from "./lib/youtube.js";
 import { fetchTranscript } from "./lib/transcript.js";
 import { summarizeTranscript } from "./lib/summarize.js";
 import { buildNotificationText, notifyLine } from "./lib/line.js";
+import { reportToJobSummary } from "./lib/report.js";
 
 // 1動画の処理失敗でパイプライン全体を止めない。失敗した動画は処理済みに
 // マークせず、次回実行時に再度検知・リトライする。
@@ -26,11 +27,19 @@ export async function runPipeline({ channels, processedIds, env, deps = {}, logg
           logger.warn(`[${video.videoId}] 文字起こしを取得できませんでした。スキップします`);
           continue;
         }
-        const summary = await summarizeTranscript(video.title, transcript, env.ANTHROPIC_API_KEY, deps);
+        const summary = await summarizeTranscript(video.title, transcript, env.GEMINI_API_KEY, deps);
         const text = buildNotificationText(channel.name, video, summary);
-        await notifyLine(text, env.LINE_CHANNEL_ACCESS_TOKEN, env.LINE_USER_ID, deps);
+        await reportToJobSummary(text, deps);
+
+        const lineConfigured = Boolean(env.LINE_CHANNEL_ACCESS_TOKEN && env.LINE_USER_ID);
+        if (lineConfigured) {
+          await notifyLine(text, env.LINE_CHANNEL_ACCESS_TOKEN, env.LINE_USER_ID, deps);
+        } else {
+          logger.warn?.(`[${video.videoId}] LINE_CHANNEL_ACCESS_TOKEN/LINE_USER_ID未設定のためLINE通知をスキップしました`);
+        }
+
         processedIds.add(video.videoId);
-        results.push({ videoId: video.videoId, status: "notified" });
+        results.push({ videoId: video.videoId, status: "reported", lineNotified: lineConfigured });
       } catch (error) {
         logger.error(`[${video.videoId}] 処理に失敗しました: ${error.message}`);
         results.push({ videoId: video.videoId, status: "failed", error: error.message });

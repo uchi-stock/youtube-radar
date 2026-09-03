@@ -16,4 +16,4 @@
 
 ## 秘匿情報
 
-`YOUTUBE_API_KEY` / `ANTHROPIC_API_KEY` / `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`はGitHub Actions Secretsで管理し、コードに埋め込まない。
+`YOUTUBE_API_KEY` / `GEMINI_API_KEY`（必須）/ `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`（任意、未設定時はLINE通知のみスキップされる）はGitHub Actions Secretsで管理し、コードに埋め込まない。
