@@ -1,0 +1,152 @@
+import { describe, expect, it, vi } from "vitest";
+import { runPipeline } from "../src/pipeline.js";
+
+function jsonResponse(body, ok = true) {
+  return { ok, status: ok ? 200 : 500, json: async () => body, text: async () => "" };
+}
+
+const channels = [{ channelId: "UC1", name: "テストチャンネル", enabled: true }];
+const env = {
+  YOUTUBE_API_KEY: "yt-key",
+  ANTHROPIC_API_KEY: "llm-key",
+  LINE_CHANNEL_ACCESS_TOKEN: "line-token",
+  LINE_USER_ID: "line-user",
+};
+
+describe("runPipeline", () => {
+  it("新着動画を検知し文字起こし取得・要約・LINE通知まで実行し処理済みとして記録する", async () => {
+    const fetchImpl = vi
+      .fn()
+      // channels.list
+      .mockResolvedValueOnce(
+        jsonResponse({ items: [{ contentDetails: { relatedPlaylists: { uploads: "PL1" } } }] }),
+      )
+      // playlistItems.list
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [
+            {
+              snippet: {
+                resourceId: { videoId: "v1" },
+                title: "テスト動画",
+                publishedAt: "2026-09-01T00:00:00Z",
+              },
+            },
+          ],
+        }),
+      )
+      // timedtext (transcript)
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => '<text start="0">こんにちは</text><text start="1">世界</text>',
+      })
+      // LLM summarize
+      .mockResolvedValueOnce(
+        jsonResponse({
+          content: [
+            {
+              text: JSON.stringify({ summary: ["要点1", "要点2", "要点3"], importance: 4, recommendation: 5 }),
+            },
+          ],
+        }),
+      )
+      // LINE push
+      .mockResolvedValueOnce(jsonResponse({}));
+
+    const processedIds = new Set();
+    const results = await runPipeline({
+      channels,
+      processedIds,
+      env,
+      deps: { fetchImpl },
+      logger: { error: vi.fn(), warn: vi.fn() },
+    });
+
+    expect(results).toEqual([{ videoId: "v1", status: "notified" }]);
+    expect(processedIds.has("v1")).toBe(true);
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
+  });
+
+  it("既に処理済みの動画は再通知しない", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ items: [{ contentDetails: { relatedPlaylists: { uploads: "PL1" } } }] }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [{ snippet: { resourceId: { videoId: "v1" }, title: "t", publishedAt: "2026-09-01" } }],
+        }),
+      );
+
+    const processedIds = new Set(["v1"]);
+    const results = await runPipeline({
+      channels,
+      processedIds,
+      env,
+      deps: { fetchImpl },
+      logger: { error: vi.fn(), warn: vi.fn() },
+    });
+
+    expect(results).toEqual([]);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it("文字起こしが取得できない動画は処理済みにせずスキップする", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ items: [{ contentDetails: { relatedPlaylists: { uploads: "PL1" } } }] }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [{ snippet: { resourceId: { videoId: "v1" }, title: "t", publishedAt: "2026-09-01" } }],
+        }),
+      )
+      .mockResolvedValueOnce({ ok: false, status: 404, text: async () => "" });
+
+    const processedIds = new Set();
+    const results = await runPipeline({
+      channels,
+      processedIds,
+      env,
+      deps: { fetchImpl },
+      logger: { error: vi.fn(), warn: vi.fn() },
+    });
+
+    expect(results).toEqual([]);
+    expect(processedIds.has("v1")).toBe(false);
+  });
+
+  it("1動画の処理失敗時も他の動画・チャンネルの処理を継続する", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({ items: [{ contentDetails: { relatedPlaylists: { uploads: "PL1" } } }] }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [{ snippet: { resourceId: { videoId: "v1" }, title: "t", publishedAt: "2026-09-01" } }],
+        }),
+      )
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => '<text start="0">本文</text>',
+      })
+      .mockResolvedValueOnce(jsonResponse({}, false));
+
+    const processedIds = new Set();
+    const results = await runPipeline({
+      channels,
+      processedIds,
+      env,
+      deps: { fetchImpl },
+      logger: { error: vi.fn(), warn: vi.fn() },
+    });
+
+    expect(results).toEqual([{ videoId: "v1", status: "failed", error: "LLM summarize failed: 500" }]);
+    expect(processedIds.has("v1")).toBe(false);
+  });
+});
