@@ -12,7 +12,7 @@
 
 ### 2.1 お気に入りチャンネル登録
 
-ユーザーが監視対象となるYouTubeチャンネルを登録する。MVPでは管理画面を作らず、設定ファイル（`backend/src/config/channels.json`）から登録する。将来的にはWeb UIから登録可能にする。
+ユーザーが監視対象となるYouTubeチャンネルを登録する。MVPでは管理画面を作らず、ユーザーがYouTube上でチャンネル登録（サブスクライブ）している一覧をOAuth経由で自動取得し、監視対象とする（`backend/src/lib/subscriptions.js`）。将来的にはWeb UIから個別に登録・除外可能にする。
 
 ### 2.2 新着動画検知
 

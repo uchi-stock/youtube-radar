@@ -1,15 +1,22 @@
-import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runPipeline } from "./pipeline.js";
 import { loadProcessedVideoIds, saveProcessedVideoIds } from "./lib/store.js";
+import { getAccessToken } from "./lib/googleAuth.js";
+import { fetchSubscribedChannels } from "./lib/subscriptions.js";
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
-const CHANNELS_PATH = path.join(dirname, "config/channels.json");
 const PROCESSED_PATH = path.join(dirname, "../data/processed-videos.json");
 
 async function main() {
-  const channels = JSON.parse(await readFile(CHANNELS_PATH, "utf-8"));
+  const accessToken = await getAccessToken({
+    clientId: process.env.GOOGLE_OAUTH_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_OAUTH_CLIENT_SECRET,
+    refreshToken: process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
+  });
+  const channels = await fetchSubscribedChannels(accessToken);
+  console.log(`チャンネル登録一覧を${channels.length}件取得しました`);
+
   const processedIds = await loadProcessedVideoIds(PROCESSED_PATH);
 
   const results = await runPipeline({
