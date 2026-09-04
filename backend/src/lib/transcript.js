@@ -45,14 +45,21 @@ function decodeXmlText(text) {
     .trim();
 }
 
-export async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch } = {}) {
+export async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch, logger = console } = {}) {
   const listUrl = `https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(videoId)}`;
   const listRes = await fetchImpl(listUrl);
   if (!listRes.ok) {
+    logger.warn?.(`[${videoId}] 字幕トラック一覧の取得に失敗しました: HTTP ${listRes.status}`);
     return null;
   }
-  const track = selectTrack(parseTracks(await listRes.text()), lang);
+  const listXml = await listRes.text();
+  const track = selectTrack(parseTracks(listXml), lang);
   if (!track) {
+    // 原因調査用の一時的な診断ログ（Issue #16）。GitHub Actions実行環境からの
+    // アクセスがブロック・レート制限されていないか、実際のレスポンス内容で確認する。
+    logger.warn?.(
+      `[${videoId}] 字幕トラックが見つかりませんでした（HTTP ${listRes.status}, 本文冒頭200文字: ${JSON.stringify(listXml.slice(0, 200))}）`,
+    );
     return null;
   }
 
