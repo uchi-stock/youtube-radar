@@ -35,7 +35,13 @@ describe("runPipeline", () => {
           ],
         }),
       )
-      // timedtext (transcript)
+      // timedtext type=list（字幕トラック一覧）
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => '<transcript_list><track lang_code="ja"/></transcript_list>',
+      })
+      // timedtext（字幕本文）
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -71,7 +77,7 @@ describe("runPipeline", () => {
 
     expect(results).toEqual([{ videoId: "v1", status: "reported", lineNotified: true }]);
     expect(processedIds.has("v1")).toBe(true);
-    expect(fetchImpl).toHaveBeenCalledTimes(5);
+    expect(fetchImpl).toHaveBeenCalledTimes(6);
   });
 
   it("LINE未設定でも要約結果を処理済みとして記録し、LINE通知のみスキップする", async () => {
@@ -89,6 +95,11 @@ describe("runPipeline", () => {
           ],
         }),
       )
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => '<transcript_list><track lang_code="ja"/></transcript_list>',
+      })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -119,8 +130,8 @@ describe("runPipeline", () => {
     expect(results).toEqual([{ videoId: "v1", status: "reported", lineNotified: false }]);
     expect(processedIds.has("v1")).toBe(true);
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("LINE通知をスキップしました"));
-    // LINE pushの呼び出しが発生していないこと（4回目まででfetchが止まっている）
-    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    // LINE pushの呼び出しが発生していないこと（5回目まででfetchが止まっている）
+    expect(fetchImpl).toHaveBeenCalledTimes(5);
   });
 
   it("既に処理済みの動画は再通知しない", async () => {
@@ -185,6 +196,11 @@ describe("runPipeline", () => {
           items: [{ snippet: { resourceId: { videoId: "v1" }, title: "t", publishedAt: "2026-09-01" } }],
         }),
       )
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => '<transcript_list><track lang_code="ja"/></transcript_list>',
+      })
       .mockResolvedValueOnce({
         ok: true,
         status: 200,
