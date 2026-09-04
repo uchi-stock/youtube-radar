@@ -1,0 +1,31 @@
+name: Invoke Pipeline (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  invoke:
+    runs-on: ubuntu-latest
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_DEFAULT_REGION: ap-northeast-1
+    steps:
+      - name: Invoke Lambda and capture logs
+        run: |
+          aws lambda invoke \
+            --function-name youtube-radar-pipeline-dev-pipeline \
+            --log-type Tail \
+            --cli-read-timeout 300 \
+            response.json > invoke-result.json
+
+          echo '## Lambda invoke result' >> "$GITHUB_STEP_SUMMARY"
+          echo '### Response' >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          cat response.json >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          echo '### Logs (CloudWatch, tail)' >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          jq -r '.LogResult' invoke-result.json | base64 -d >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
