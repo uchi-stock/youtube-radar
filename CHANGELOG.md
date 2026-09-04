@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/uchi-stock/youtube-radar/compare/v1.2.0...v1.2.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* Lambda呼び出し結果をジョブログにも出力する ([#22](https://github.com/uchi-stock/youtube-radar/issues/22)) ([9340b40](https://github.com/uchi-stock/youtube-radar/commit/9340b40daec6d375a0811fd2db928fb9447ffb13))
+
 # [1.2.0](https://github.com/uchi-stock/youtube-radar/compare/v1.1.0...v1.2.0) (2026-09-04)
 
 
