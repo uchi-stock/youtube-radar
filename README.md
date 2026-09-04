@@ -43,3 +43,7 @@ cd backend
 npm ci
 npm test
 ```
+
+## バージョニング
+
+Conventional Commits形式のコミット履歴（`fix:`→patch、`feat:`→minor等）をもとに、`main`へのマージのたびに`.github/workflows/cd.yml`（`dev-standards/reusable-cd.yml`）がsemantic-releaseを実行し、バージョンタグ・GitHub Release・`CHANGELOG.md`を自動更新する。手動でのバージョン管理・タグ付けは不要。

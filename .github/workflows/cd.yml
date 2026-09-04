@@ -1,0 +1,14 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  cd:
+    uses: bamiyanapp/dev-standards/.github/workflows/reusable-cd.yml@v2.7.3
+    with:
+      enable_release: true
+      enable_shared_release_config: true
+    secrets:
+      BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
