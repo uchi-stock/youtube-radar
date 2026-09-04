@@ -22,7 +22,7 @@ export async function runPipeline({ channels, processedIds, env, deps = {}, logg
         continue;
       }
       try {
-        const transcript = await fetchTranscript(video.videoId, deps);
+        const transcript = await fetchTranscript(video.videoId, { ...deps, logger });
         if (!transcript) {
           logger.warn(`[${video.videoId}] 文字起こしを取得できませんでした。スキップします`);
           continue;
