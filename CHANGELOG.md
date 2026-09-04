@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/uchi-stock/youtube-radar/compare/v1.1.0...v1.2.0) (2026-09-04)
+
+
+### Features
+
+* Lambdaパイプラインを手動実行し結果をJob Summaryへ出力するワークフローを追加する ([#21](https://github.com/uchi-stock/youtube-radar/issues/21)) ([bead47d](https://github.com/uchi-stock/youtube-radar/commit/bead47d3aab2f8e35562d2b096902f4e5b4c920d))
+
 # [1.1.0](https://github.com/uchi-stock/youtube-radar/compare/v1.0.1...v1.1.0) (2026-09-04)
 
 
