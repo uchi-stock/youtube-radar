@@ -6,19 +6,40 @@
 
 ## 構成
 
-- `backend/`: パイプライン本体（Node.js）。フロントエンドは持たず、GitHub Actionsの定期実行（`.github/workflows/pipeline.yml`）のみで完結する
+- `backend/`: パイプライン本体（Node.js）。フロントエンドは持たない
+- 実行基盤: AWS Lambda（EventBridge Scheduleで6時間ごとに自動実行）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions自体の共有IPからはYouTubeの字幕取得エンドポイントがレート制限されるため、実行環境をAWS Lambdaへ移した（Issue #16・#19）
 - 監視対象チャンネル: 設定ファイルでの手動登録は行わず、YouTube上でチャンネル登録（サブスクライブ）しているチャンネル一覧をOAuth経由で自動取得する（`backend/src/lib/subscriptions.js`）
-- `backend/data/processed-videos.json`: 処理済み動画IDの記録（pipeline実行のたびにコミットで更新）
-- 要約結果はGitHub ActionsのJob Summaryへ常に出力される。LINE Messaging API（`LINE_CHANNEL_ACCESS_TOKEN`・`LINE_USER_ID`）は任意設定で、未設定の間はLINE通知のみスキップされる（Job Summaryでの確認は行われる）
+- 処理済み動画IDの記録: DynamoDB（`backend/src/lib/dynamoStore.js`。テーブルは`serverless.yml`でコード管理）
+- LINE Messaging API（`LINE_CHANNEL_ACCESS_TOKEN`・`LINE_USER_ID`）は任意設定。未設定の間はLINE通知のみスキップされる（実行結果はCloudWatch Logsで確認する）
 
 ## セットアップ
 
-1. リポジトリのSettings → Secrets and variables → Actionsから以下を登録する（スマートフォンのブラウザから設定可能）
-   - `YOUTUBE_API_KEY`: YouTube Data API v3のAPIキー（必須。新着動画確認に使用）
-   - `GEMINI_API_KEY`: Gemini APIキー（必須）
-   - `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` / `GOOGLE_OAUTH_REFRESH_TOKEN`: チャンネル登録一覧取得用のOAuth認証情報（必須。取得手順は下記）
-   - `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`: LINE Messaging APIの通知先（任意。未設定でもパイプラインは動作し、要約結果はJob Summaryで確認できる）
-2. Actionsタブから`YouTube Radar Pipeline`ワークフローを開き、`Run workflow`で手動実行する（以降は6時間ごとに自動実行）。実行完了後、そのワークフロー実行のJob Summaryに要約結果が表示される
+### 1. AWS IAMユーザーの作成（スマートフォンのブラウザで完結）
+
+1. https://console.aws.amazon.com/iam/home#/users を開き、「ユーザーを作成」
+2. ユーザー名は任意（例: `youtube-radar-deploy`）。「AWSマネジメントコンソールへのアクセスを提供する」はオフのままでよい（プログラムによるアクセスのみ使用）
+3. 権限は「ポリシーを直接アタッチする」から、最低限`AWSLambda_FullAccess`・`AmazonDynamoDBFullAccess`・`CloudWatchLogsFullAccess`・`AmazonEventBridgeFullAccess`・`IAMFullAccess`（Lambda実行ロール作成のため）・`AWSCloudFormationFullAccess`（OSLSがCloudFormation経由でリソースを作成するため）を付与する
+4. 作成後、そのユーザーの詳細画面→「セキュリティ認証情報」タブ→「アクセスキーを作成」→ユースケースは「その他」を選択→表示された「アクセスキー」「シークレットアクセスキー」を控える（シークレットアクセスキーはこの画面でしか表示されない）
+
+### 2. GitHub Secretsの登録
+
+リポジトリのSettings → Secrets and variables → Actionsから以下を登録する（スマートフォンのブラウザから設定可能）。
+
+- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`: 上記IAMユーザーのアクセスキー（必須。デプロイに使用）
+- `YOUTUBE_API_KEY`: YouTube Data API v3のAPIキー（必須。新着動画確認に使用）
+- `GEMINI_API_KEY`: Gemini APIキー（必須）
+- `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` / `GOOGLE_OAUTH_REFRESH_TOKEN`: チャンネル登録一覧取得用のOAuth認証情報（必須。取得手順は下記）
+- `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`: LINE Messaging APIの通知先（任意）
+
+### 3. デプロイ
+
+mainブランチへのpush（PRマージ）のたびに`.github/workflows/cd.yml`が自動でLambda関数をデプロイする。初回はSecrets登録後、何らかのPRをマージすることでデプロイが走る。
+
+### 4. 実行結果の確認（スマートフォンのブラウザで完結）
+
+1. https://console.aws.amazon.com/lambda/home を開き、`youtube-radar-pipeline-dev-pipeline`（リージョン: `ap-northeast-1`）関数を開く
+2. 「テスト」タブから空のテストイベントで手動実行するか、6時間ごとの自動実行を待つ
+3. 「モニタリング」タブ→「CloudWatch Logsを表示」でログを確認する
 
 ### OAuth認証情報の取得手順（スマートフォンのブラウザで完結）
 

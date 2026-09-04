@@ -3,10 +3,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "vitest run",
-    "start": "node src/index.js"
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1106.0",
+    "@aws-sdk/lib-dynamodb": "^3.1106.0"
   },
   "devDependencies": {
+    "osls": "^3.55.0",
     "vitest": "^2.1.9"
   }
 }

@@ -16,7 +16,7 @@
 
 ### 2.2 新着動画検知
 
-定期的にYouTube Data APIを利用して、登録チャンネルの新着動画を確認する。重複通知を防ぐため、処理済み動画IDを保存する（`backend/data/processed-videos.json`）。
+定期的にYouTube Data APIを利用して、登録チャンネルの新着動画を確認する。重複通知を防ぐため、処理済み動画IDを保存する（DynamoDB、`backend/src/lib/dynamoStore.js`）。
 
 ### 2.3 文字起こし取得
 
@@ -59,14 +59,16 @@ AI処理が完了した動画をLINE Messaging APIで通知する。通知イメ
 
 ## 5. アーキテクチャ（MVP）
 
-常設のクラウドインフラ（EventBridge/Lambda/DynamoDB等）は使わず、GitHub Actionsの定期実行（schedule）で完結させる。処理済み動画IDや要約結果はリポジトリ内のJSONファイルで管理する。
+当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。処理済み動画IDはDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
 
 ```
-GitHub Actions (schedule)
+EventBridge Schedule（6時間ごと）
+     ↓
+AWS Lambda
      ↓
 YouTube Data API（新着動画確認）
      ↓
-処理済み動画IDと比較（backend/data/processed-videos.json）
+処理済み動画IDと比較（DynamoDB）
      ↓
 文字起こし取得
      ↓
@@ -74,10 +76,8 @@ LLM API（要約・重要度・視聴推奨度）
      ↓
 LINE Messaging API（通知）
      ↓
-処理済み動画IDを更新してコミット
+処理済み動画IDをDynamoDBへ記録
 ```
-
-将来的にチャンネル数・処理量が増えた場合は、`docs/standard-tech-stack.md`の標準構成（Lambda + API Gateway + DynamoDB）への移行を検討する。
 
 ## 6. エラー処理
 
