@@ -26,7 +26,8 @@
 
 1. **OAuthクライアントの作成**
    - https://console.cloud.google.com/apis/credentials にアクセス
-   - 「認証情報を作成」→「OAuthクライアントID」→アプリケーションの種類は「デスクトップアプリ」を選択して作成
+   - 「認証情報を作成」→「OAuthクライアントID」→アプリケーションの種類は**「ウェブ アプリケーション」**を選択（「デスクトップアプリ」を選ぶとOAuth Playgroundでリダイレクト先を登録できず、後続手順で`redirect_uri_mismatch`エラーになる）
+   - 「承認済みのリダイレクトURI」に `https://developers.google.com/oauthplayground` を追加して作成
    - 表示された「クライアントID」「クライアントシークレット」を控える
    - 初回は「OAuth同意画面」の設定を求められる場合がある。User Type は「外部」を選び、スコープは後述の`youtube.readonly`を追加、テストユーザーに自分のGoogleアカウントを追加する
 2. **リフレッシュトークンの取得**（[Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground)を利用）
