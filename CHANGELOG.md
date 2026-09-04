@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/uchi-stock/youtube-radar/compare/v1.0.0...v1.0.1) (2026-09-04)
+
+
+### Bug Fixes
+
+* 字幕トラック一覧から動的に選択して文字起こしを取得する ([#15](https://github.com/uchi-stock/youtube-radar/issues/15)) ([2f79db2](https://github.com/uchi-stock/youtube-radar/commit/2f79db2cdfc422a81f1257f8b0b50ac699035832))
+
 # 1.0.0 (2026-09-04)
 
 
