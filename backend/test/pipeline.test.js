@@ -70,6 +70,7 @@ describe("runPipeline", () => {
     const results = await runPipeline({
       channels,
       processedIds,
+      markProcessed: vi.fn(),
       env,
       deps: { fetchImpl },
       logger: { error: vi.fn(), warn: vi.fn() },
@@ -122,6 +123,7 @@ describe("runPipeline", () => {
     const results = await runPipeline({
       channels,
       processedIds,
+      markProcessed: vi.fn(),
       env: { ...env, LINE_CHANNEL_ACCESS_TOKEN: undefined, LINE_USER_ID: undefined },
       deps: { fetchImpl },
       logger: { error: vi.fn(), warn },
@@ -150,6 +152,7 @@ describe("runPipeline", () => {
     const results = await runPipeline({
       channels,
       processedIds,
+      markProcessed: vi.fn(),
       env,
       deps: { fetchImpl },
       logger: { error: vi.fn(), warn: vi.fn() },
@@ -176,6 +179,7 @@ describe("runPipeline", () => {
     const results = await runPipeline({
       channels,
       processedIds,
+      markProcessed: vi.fn(),
       env,
       deps: { fetchImpl },
       logger: { error: vi.fn(), warn: vi.fn() },
@@ -212,6 +216,7 @@ describe("runPipeline", () => {
     const results = await runPipeline({
       channels,
       processedIds,
+      markProcessed: vi.fn(),
       env,
       deps: { fetchImpl },
       logger: { error: vi.fn(), warn: vi.fn() },

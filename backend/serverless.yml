@@ -1,0 +1,47 @@
+service: youtube-radar-pipeline
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: ap-northeast-1
+  environment:
+    PROCESSED_VIDEOS_TABLE: ${self:service}-${sls:stage}-processed-videos
+    YOUTUBE_API_KEY: ${env:YOUTUBE_API_KEY}
+    GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    GOOGLE_OAUTH_CLIENT_ID: ${env:GOOGLE_OAUTH_CLIENT_ID}
+    GOOGLE_OAUTH_CLIENT_SECRET: ${env:GOOGLE_OAUTH_CLIENT_SECRET}
+    GOOGLE_OAUTH_REFRESH_TOKEN: ${env:GOOGLE_OAUTH_REFRESH_TOKEN}
+    LINE_CHANNEL_ACCESS_TOKEN: ${env:LINE_CHANNEL_ACCESS_TOKEN, ''}
+    LINE_USER_ID: ${env:LINE_USER_ID, ''}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:Scan
+          Resource: !GetAtt ProcessedVideosTable.Arn
+
+functions:
+  pipeline:
+    handler: src/lambda.handler
+    timeout: 300
+    memorySize: 512
+    events:
+      - schedule: rate(6 hours)
+
+resources:
+  Resources:
+    ProcessedVideosTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.PROCESSED_VIDEOS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: videoId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: videoId
+            KeyType: HASH

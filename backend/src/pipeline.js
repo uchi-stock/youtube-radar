@@ -6,7 +6,7 @@ import { reportToJobSummary } from "./lib/report.js";
 
 // 1動画の処理失敗でパイプライン全体を止めない。失敗した動画は処理済みに
 // マークせず、次回実行時に再度検知・リトライする。
-export async function runPipeline({ channels, processedIds, env, deps = {}, logger = console }) {
+export async function runPipeline({ channels, processedIds, markProcessed, env, deps = {}, logger = console }) {
   const results = [];
   for (const channel of channels.filter((c) => c.enabled)) {
     let videos;
@@ -39,6 +39,7 @@ export async function runPipeline({ channels, processedIds, env, deps = {}, logg
         }
 
         processedIds.add(video.videoId);
+        await markProcessed(video.videoId);
         results.push({ videoId: video.videoId, status: "reported", lineNotified: lineConfigured });
       } catch (error) {
         logger.error(`[${video.videoId}] 処理に失敗しました: ${error.message}`);
