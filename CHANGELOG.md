@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/uchi-stock/youtube-radar/compare/v1.0.1...v1.1.0) (2026-09-04)
+
+
+### Features
+
+* パイプライン実行基盤をAWS Lambda（OSLS）へ移行する ([#20](https://github.com/uchi-stock/youtube-radar/issues/20)) ([dc30b66](https://github.com/uchi-stock/youtube-radar/commit/dc30b66d66b793ca430ce99e421e517e08606ddd))
+
 ## [1.0.1](https://github.com/uchi-stock/youtube-radar/compare/v1.0.0...v1.0.1) (2026-09-04)
 
 
