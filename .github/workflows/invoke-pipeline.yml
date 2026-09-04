@@ -19,13 +19,14 @@ jobs:
             --cli-read-timeout 300 \
             response.json > invoke-result.json
 
-          echo '## Lambda invoke result' >> "$GITHUB_STEP_SUMMARY"
-          echo '### Response' >> "$GITHUB_STEP_SUMMARY"
-          echo '```json' >> "$GITHUB_STEP_SUMMARY"
-          cat response.json >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-
-          echo '### Logs (CloudWatch, tail)' >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          jq -r '.LogResult' invoke-result.json | base64 -d >> "$GITHUB_STEP_SUMMARY"
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo '## Lambda invoke result'
+            echo '### Response'
+            echo '```json'
+            cat response.json
+            echo '```'
+            echo '### Logs (CloudWatch, tail)'
+            echo '```'
+            jq -r '.LogResult' invoke-result.json | base64 -d
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
