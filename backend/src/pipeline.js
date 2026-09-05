@@ -6,9 +6,29 @@ import { reportToJobSummary } from "./lib/report.js";
 
 // 1動画の処理失敗でパイプライン全体を止めない。失敗した動画は処理済みに
 // マークせず、次回実行時に再度検知・リトライする。
-export async function runPipeline({ channels, processedIds, markProcessed, env, deps = {}, logger = console }) {
+//
+// maxVideosPerRun: 1回の実行でTranscript取得を試みる動画数の上限。429がアクセス制限である
+// 可能性を踏まえ、1回の実行で大量アクセスしないよう制限する。上限を超えた分は処理済みに
+// マークしないため、次回実行時に持ち越される。
+export async function runPipeline({
+  channels,
+  processedIds,
+  markProcessed,
+  env,
+  deps = {},
+  logger = console,
+  maxVideosPerRun = Infinity,
+}) {
   const results = [];
+  let attemptedCount = 0;
+
   for (const channel of channels.filter((c) => c.enabled)) {
+    if (attemptedCount >= maxVideosPerRun) {
+      logger.warn?.(
+        `1回の実行あたりの処理件数上限（${maxVideosPerRun}件）に達したため、残りのチャンネルは次回実行に持ち越します`,
+      );
+      break;
+    }
     let videos;
     try {
       videos = await fetchLatestVideos(channel.channelId, env.YOUTUBE_API_KEY, deps);
@@ -21,6 +41,13 @@ export async function runPipeline({ channels, processedIds, markProcessed, env, 
       if (processedIds.has(video.videoId)) {
         continue;
       }
+      if (attemptedCount >= maxVideosPerRun) {
+        logger.warn?.(
+          `1回の実行あたりの処理件数上限（${maxVideosPerRun}件）に達したため、残りの未処理動画は次回実行に持ち越します`,
+        );
+        break;
+      }
+      attemptedCount += 1;
       try {
         const { status, transcript } = await fetchTranscript(video.videoId, { ...deps, logger });
         if (status !== "OK") {
