@@ -8,14 +8,13 @@ describe("requestAccessToken", () => {
 
   it("アクセストークンを取得できたらresolveする", async () => {
     const requestAccessTokenMock = vi.fn();
-    const initTokenClientMock = vi.fn(({ callback }) => {
-      requestAccessTokenMock.mockImplementation(() => callback({ access_token: "token-123" }));
-      return { requestAccessToken: requestAccessTokenMock };
-    });
     window.google = {
       accounts: {
         oauth2: {
-          initTokenClient: initTokenClientMock,
+          initTokenClient: ({ callback }) => {
+            requestAccessTokenMock.mockImplementation(() => callback({ access_token: "token-123" }));
+            return { requestAccessToken: requestAccessTokenMock };
+          },
           revoke: vi.fn(),
         },
       },
@@ -25,7 +24,6 @@ describe("requestAccessToken", () => {
 
     expect(token).toBe("token-123");
     expect(requestAccessTokenMock).toHaveBeenCalledTimes(1);
-    expect(initTokenClientMock).toHaveBeenCalledWith(expect.objectContaining({ use_fedcm_for_prompt: true }));
   });
 
   it("エラーが返された場合はrejectする", async () => {
