@@ -1,3 +1,10 @@
+## [1.2.4](https://github.com/uchi-stock/youtube-radar/compare/v1.2.3...v1.2.4) (2026-09-05)
+
+
+### Bug Fixes
+
+* **transcript:** 429時にバックオフでリトライし無制限リトライを避ける ([#31](https://github.com/uchi-stock/youtube-radar/issues/31)) ([7bcf901](https://github.com/uchi-stock/youtube-radar/commit/7bcf9015120355dff2e9d34f2962ec21853eebe8))
+
 ## [1.2.3](https://github.com/uchi-stock/youtube-radar/compare/v1.2.2...v1.2.3) (2026-09-05)
 
 
