@@ -1,3 +1,10 @@
+# [1.12.0](https://github.com/uchi-stock/youtube-radar/compare/v1.11.0...v1.12.0) (2026-09-05)
+
+
+### Features
+
+* 動画タップでメタ情報と文字起こし済み要約を表示する ([#60](https://github.com/uchi-stock/youtube-radar/issues/60)) ([daefe51](https://github.com/uchi-stock/youtube-radar/commit/daefe51ddcb1aadd8536011452eafff98535109f))
+
 # [1.11.0](https://github.com/uchi-stock/youtube-radar/compare/v1.10.1...v1.11.0) (2026-09-05)
 
 
