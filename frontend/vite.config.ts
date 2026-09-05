@@ -11,6 +11,12 @@ export default defineConfig({
   define: {
     ...getAppVersionDefine(new URL('../package.json', import.meta.url)),
   },
+  // ShareButton.jsx（symlink経由の共有コンポーネント）がqrcode.reactをimportするため、
+  // シンボリックリンクの実体パス起点でnode_modulesを探索させないようにする
+  // （docs/shared-ui-components.md「ShareButton.jsx」参照）。
+  resolve: {
+    preserveSymlinks: true,
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],

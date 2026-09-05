@@ -3,6 +3,7 @@ import { fetchChannelVideos, type ChannelVideo } from "./channelVideos";
 import { requestAccessToken, revokeAccessToken } from "./googleAuth";
 import { fetchGoogleUserInfo, type GoogleUserInfo } from "./googleUserInfo";
 import formatBuildTime from "./formatBuildTime"; // symlink
+import ShareButton from "./ShareButton"; // symlink
 import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
 
@@ -46,6 +47,7 @@ export default function App() {
   const [videosErrorMessage, setVideosErrorMessage] = useState<string | null>(null);
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
   const [videoDetails, setVideoDetails] = useState<Record<string, VideoDetailEntry>>({});
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   async function handleLogin() {
     if (!GOOGLE_CLIENT_ID) {
@@ -84,6 +86,7 @@ export default function App() {
     setVideos([]);
     setVideosStatus("idle");
     setVideosErrorMessage(null);
+    setUserMenuOpen(false);
   }
 
   async function handleSelectChannel(channel: SubscribedChannel) {
@@ -141,21 +144,47 @@ export default function App() {
           </small>
         </h1>
         {userInfo?.picture && (
-          <img
-            src={userInfo.picture}
-            alt={userInfo.name}
-            title={userInfo.name}
-            width={40}
-            height={40}
-            className="rounded-circle"
-          />
+          <div className="position-relative">
+            <button
+              type="button"
+              className="btn p-0 border-0 bg-transparent"
+              onClick={() => setUserMenuOpen((open) => !open)}
+            >
+              <img
+                src={userInfo.picture}
+                alt={userInfo.name}
+                title={userInfo.name}
+                width={40}
+                height={40}
+                className="rounded-circle"
+              />
+            </button>
+            {userMenuOpen && (
+              <ul className="dropdown-menu dropdown-menu-end show position-absolute">
+                <li>
+                  <button type="button" className="dropdown-item" onClick={handleLogout}>
+                    ログアウト
+                  </button>
+                </li>
+                <li>
+                  <ShareButton label="アプリリンクを共有" className="dropdown-item" />
+                </li>
+              </ul>
+            )}
+          </div>
         )}
       </div>
 
       {status !== "loaded" && (
-        <button type="button" className="btn btn-primary" onClick={handleLogin} disabled={status === "loading"}>
-          {status === "loading" ? "読み込み中..." : "Googleでログイン"}
-        </button>
+        <>
+          <p>
+            お気に入りのYouTubeチャンネルをAIが定期巡回し、新着動画の文字起こしを要約・重要度判定してLINEへ通知するアプリです。
+            このWebアプリでは、登録チャンネル一覧・最新動画・要約状況を閲覧できます。
+          </p>
+          <button type="button" className="btn btn-primary" onClick={handleLogin} disabled={status === "loading"}>
+            {status === "loading" ? "読み込み中..." : "Googleでログイン"}
+          </button>
+        </>
       )}
 
       {status === "error" && errorMessage && (
@@ -166,12 +195,7 @@ export default function App() {
 
       {status === "loaded" && !selectedChannel && (
         <>
-          <div className="d-flex justify-content-between align-items-center mb-3">
-            <p className="mb-0">登録チャンネル: {channels.length}件</p>
-            <button type="button" className="btn btn-outline-secondary btn-sm" onClick={handleLogout}>
-              ログアウト
-            </button>
-          </div>
+          <p className="mb-3">登録チャンネル: {channels.length}件</p>
           <ul className="list-group">
             {channels.map((channel) => (
               <li key={channel.channelId} className="list-group-item">
