@@ -1,3 +1,10 @@
+# [1.11.0](https://github.com/uchi-stock/youtube-radar/compare/v1.10.1...v1.11.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** チャンネルタップで最新動画一覧と再生回数を表示する ([#58](https://github.com/uchi-stock/youtube-radar/issues/58)) ([271e9c5](https://github.com/uchi-stock/youtube-radar/commit/271e9c5ca12d01cc95ec8327cabf6b82264e1573))
+
 ## [1.10.1](https://github.com/uchi-stock/youtube-radar/compare/v1.10.0...v1.10.1) (2026-09-05)
 
 
