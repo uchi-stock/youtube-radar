@@ -17,10 +17,7 @@ provider:
     GOOGLE_OAUTH_REFRESH_TOKEN: ${env:GOOGLE_OAUTH_REFRESH_TOKEN}
     LINE_CHANNEL_ACCESS_TOKEN: ${env:LINE_CHANNEL_ACCESS_TOKEN, ''}
     LINE_USER_ID: ${env:LINE_USER_ID, ''}
-    # 429（アクセス制限）発生時のリトライ上限・待機時間のベース値。実際の429発生状況を見ながら調整する。
-    TRANSCRIPT_RETRY_MAX: ${env:TRANSCRIPT_RETRY_MAX, '2'}
-    TRANSCRIPT_RETRY_BASE_DELAY_MS: ${env:TRANSCRIPT_RETRY_BASE_DELAY_MS, '500'}
-    # 1回の実行でTranscript取得を試みる動画数の上限。429の発生状況を見ながら調整する。
+    # 1回の実行でTranscript取得を試みる動画数の上限。
     TRANSCRIPT_BATCH_SIZE: ${env:TRANSCRIPT_BATCH_SIZE, '5'}
     # 自宅Raspberry PiからのAPI呼び出しを認証する共有シークレット。
     PI_API_KEY: ${env:PI_API_KEY}

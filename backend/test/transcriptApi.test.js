@@ -12,11 +12,10 @@ const env = {
   LINE_USER_ID: "line-user",
 };
 
-function fakeStore({ pending = [], retryWait = [], items = {} } = {}) {
+function fakeStore({ pending = [], items = {} } = {}) {
   return {
     loadByStatus: vi.fn(async (status) => {
       if (status === VIDEO_STATUS.PENDING) return pending;
-      if (status === VIDEO_STATUS.RETRY_WAIT) return retryWait;
       return [];
     }),
     getStatus: vi.fn(async (videoId) => items[videoId]),
@@ -27,8 +26,8 @@ function fakeStore({ pending = [], retryWait = [], items = {} } = {}) {
 const video = { videoId: "v1", channelName: "テストチャンネル", title: "テスト動画", publishedAt: "2026-09-01" };
 
 describe("getPendingVideos", () => {
-  it("PENDINGとRETRY_WAITの動画をmaxVideosPerRunまで返す", async () => {
-    const store = fakeStore({ pending: [video], retryWait: [{ ...video, videoId: "v2" }] });
+  it("PENDINGの動画をmaxVideosPerRunまで返す", async () => {
+    const store = fakeStore({ pending: [video, { ...video, videoId: "v2" }] });
 
     const videos = await getPendingVideos({ store, maxVideosPerRun: 1 });
 
