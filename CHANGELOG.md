@@ -1,3 +1,10 @@
+## [1.6.1](https://github.com/uchi-stock/youtube-radar/compare/v1.6.0...v1.6.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **serverless:** discover関数のタイムアウトを300秒に戻す ([#39](https://github.com/uchi-stock/youtube-radar/issues/39)) ([d854434](https://github.com/uchi-stock/youtube-radar/commit/d8544340b9e9fde2bbe3f62f7a36d161c5a10ab0))
+
 # [1.6.0](https://github.com/uchi-stock/youtube-radar/compare/v1.5.0...v1.6.0) (2026-09-05)
 
 
