@@ -1,3 +1,10 @@
+# [1.5.0](https://github.com/uchi-stock/youtube-radar/compare/v1.4.0...v1.5.0) (2026-09-05)
+
+
+### Features
+
+* **transcriptApi:** 字幕取得を自宅ラズパイ経由に切り替えるAWS側APIを追加 ([#36](https://github.com/uchi-stock/youtube-radar/issues/36)) ([c74fc2f](https://github.com/uchi-stock/youtube-radar/commit/c74fc2f3b44d40460d518d82344aac6019334ffd))
+
 # [1.4.0](https://github.com/uchi-stock/youtube-radar/compare/v1.3.0...v1.4.0) (2026-09-05)
 
 
