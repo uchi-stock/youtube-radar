@@ -1,0 +1,8 @@
+{
+  "name": "youtube-radar-pi",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  }
+}

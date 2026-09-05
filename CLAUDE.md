@@ -8,7 +8,7 @@
 
 ## 構成
 
-- 対象パッケージ: `backend`（Node.js、フロントエンドは持たない。MVPはLINE通知が受け取り口のため、Web UIを作らない設計）
+- 対象パッケージ: `backend`（Node.js、フロントエンドは持たない。MVPはLINE通知が受け取り口のため、Web UIを作らない設計）。加えて、自宅Raspberry Pi上で実行する字幕取得スクリプト`pi/`（依存パッケージ無し、CIでは`node --test`を実行）を持つ
 - 実行基盤: AWS Lambda（EventBridge Schedule）。新着検知（`src/lambda.js`、6時間ごと）はAWS上で行うが、字幕取得はAWS/GitHub Actions等データセンターIPからは恒常的にHTTP 429でブロックされることが判明した（Issue #16・#24）ため、自宅Raspberry Pi（家庭用IP）に委ねる。AWS側は`src/transcriptApi.js`/`src/transcriptApiLambda.js`（API Gateway HTTP API、`GET /pending`・`POST /transcripts`）でRaspberry Piとの連携APIのみを提供し、字幕取得自体は一切行わない（Issue #35）。IaCはOSLS（`backend/serverless.yml`、`osls`パッケージ、dev-standards標準の`docs/nextjs-static-lambda-pattern.md`に準拠）で管理し、`.github/workflows/cd.yml`から`dev-standards`の`.github/actions/deploy-serverless`複合actionでデプロイする
 - 動画単位のTranscript処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`RETRY_WAIT`/`FAILED`）はDynamoDBで管理する（`backend/src/lib/dynamoStore.js`）
 - CI: `.github/workflows/ci.yml`から`dev-standards/reusable-ci.yml`を`packages`入力（`backend`のみ）で呼び出す。フロントエンドが無いため`frontend-test`固定ジョブは使わない

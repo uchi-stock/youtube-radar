@@ -7,6 +7,7 @@
 ## 構成
 
 - `backend/`: パイプライン本体（Node.js）。フロントエンドは持たない
+- `pi/`: 自宅Raspberry Pi上で実行する字幕取得スクリプト（依存パッケージ無し）。セットアップ手順は[`pi/README.md`](pi/README.md)を参照
 - 実行基盤: AWS Lambda（EventBridge Schedule）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions・AWS LambdaいずれのデータセンターIPからも、YouTubeの非公式字幕取得エンドポイントがHTTP 429で恒常的にブロックされることが判明した（Issue #16・#19・#24）ため、字幕取得自体は自宅Raspberry Pi（家庭用IP）に委ねる構成にした（Issue #35）
   - `discover`関数（`src/lambda.js`、6時間ごと）: YouTube Data APIで新着動画を検知し、DynamoDBに`PENDING`として登録するのみ
   - `transcriptApi`関数（`src/transcriptApiLambda.js`、API Gateway HTTP API）: 自宅Raspberry Piからの`GET /pending`（未処理動画一覧取得）・`POST /transcripts`（字幕取得結果の送信）を受け付け、字幕を受け取ったら要約〜LINE通知〜DynamoDBの状態更新まで行う。HTTP 429等で取得できなかった場合は`RETRY_WAIT`として次回のRaspberry Piからのポーリングに持ち越す
