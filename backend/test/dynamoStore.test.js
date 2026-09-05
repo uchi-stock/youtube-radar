@@ -17,11 +17,11 @@ describe("dynamoStore", () => {
     expect(client.send).toHaveBeenCalledTimes(2);
   });
 
-  it("RETRY_WAIT・PENDING・FAILEDの動画は処理済みとして扱わない（次回も候補になる）", async () => {
+  it("PROCESSING・PENDING・FAILEDの動画は処理済みとして扱わない（次回も候補になる）", async () => {
     const client = {
       send: vi.fn().mockResolvedValue({
         Items: [
-          { videoId: "v1", status: VIDEO_STATUS.RETRY_WAIT },
+          { videoId: "v1", status: VIDEO_STATUS.PROCESSING },
           { videoId: "v2", status: VIDEO_STATUS.PENDING },
           { videoId: "v3", status: VIDEO_STATUS.FAILED },
           { videoId: "v4", status: VIDEO_STATUS.TRANSCRIPT_NOT_FOUND },
@@ -52,12 +52,12 @@ describe("dynamoStore", () => {
     const client = { send: vi.fn().mockResolvedValue({}) };
     const store = createStore("table", { client });
 
-    await store.setStatus("v1", VIDEO_STATUS.RETRY_WAIT, { retryCount: 2 });
+    await store.setStatus("v1", VIDEO_STATUS.FAILED, { retryCount: 2 });
 
     const command = client.send.mock.calls[0][0];
     expect(command.input.Item).toMatchObject({
       videoId: "v1",
-      status: VIDEO_STATUS.RETRY_WAIT,
+      status: VIDEO_STATUS.FAILED,
       retryCount: 2,
     });
   });

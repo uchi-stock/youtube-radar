@@ -10,7 +10,7 @@
 
 - 対象パッケージ: `backend`（Node.js。定期巡回パイプライン本体）。加えて、自宅Raspberry Pi上で実行する字幕取得スクリプト`pi/`（依存パッケージ無し、CIでは`node --test`を実行）と、Googleログイン→登録チャンネル一覧表示用の`frontend/`（React 19 + Vite + TypeScript + Bootstrap 5.3。バックエンドを介さない表示専用。将来的な「誰でもアカウント設定して使える」構想の入り口。Issue #44・#45）を持つ
 - 実行基盤: AWS Lambda（EventBridge Schedule）。新着検知（`src/lambda.js`、6時間ごと）はAWS上で行うが、字幕取得はAWS/GitHub Actions等データセンターIPからは恒常的にHTTP 429でブロックされることが判明した（Issue #16・#24）ため、自宅Raspberry Pi（家庭用IP）に委ねる。AWS側は`src/transcriptApi.js`/`src/transcriptApiLambda.js`（API Gateway HTTP API、`GET /pending`・`POST /transcripts`）でRaspberry Piとの連携APIのみを提供し、字幕取得自体は一切行わない（Issue #35）。IaCはOSLS（`backend/serverless.yml`、`osls`パッケージ、dev-standards標準の`docs/nextjs-static-lambda-pattern.md`に準拠）で管理し、`.github/workflows/cd.yml`から`dev-standards`の`.github/actions/deploy-serverless`複合actionでデプロイする
-- 動画単位のTranscript処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`RETRY_WAIT`/`FAILED`）はDynamoDBで管理する（`backend/src/lib/dynamoStore.js`）
+- 動画単位のTranscript処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`FAILED`）はDynamoDBで管理する（`backend/src/lib/dynamoStore.js`）
 - CI: `.github/workflows/ci.yml`から`dev-standards/reusable-ci.yml`を`packages`入力（`backend`のみ）で呼び出す。フロントエンドが無いため`frontend-test`固定ジョブは使わない
 - チャンネル登録: 設定ファイルでの手動管理は行わず、YouTube上のチャンネル登録（サブスクライブ）一覧をOAuth経由で`backend/src/lib/subscriptions.js`が自動取得する
 - 処理済み動画管理: DynamoDB（`backend/src/lib/dynamoStore.js`。テーブル定義は`backend/serverless.yml`）

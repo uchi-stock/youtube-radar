@@ -7,11 +7,10 @@ import { reportToJobSummary } from "./lib/report.js";
 // 自宅Raspberry Pi（家庭用IP）に委ねる。Raspberry Piは本モジュールが提供するAPIを介して
 // (1) 未処理動画一覧を取得し、(2) 取得した字幕（または「字幕なし」）を送信する。
 
-// Raspberry Piへ渡す未処理動画一覧（PENDING/RETRY_WAIT）を返す。
+// Raspberry Piへ渡す未処理動画一覧（PENDING）を返す。
 export async function getPendingVideos({ store, maxVideosPerRun = Infinity }) {
   const pending = await store.loadByStatus(VIDEO_STATUS.PENDING);
-  const retryWait = await store.loadByStatus(VIDEO_STATUS.RETRY_WAIT);
-  return [...pending, ...retryWait].slice(0, maxVideosPerRun);
+  return pending.slice(0, maxVideosPerRun);
 }
 
 // frontend（ブラウザ）から動画タップ時に呼ばれる、処理状態・要約の読み取り専用参照。

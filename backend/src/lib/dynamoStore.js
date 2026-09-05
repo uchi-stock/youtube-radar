@@ -1,14 +1,12 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, ScanCommand, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 
-// 動画単位のTranscript処理状態。429等のアクセス制限で今回処理を打ち切った場合は
-// RETRY_WAITとして記録し、次回実行で再度候補にする。
+// 動画単位のTranscript処理状態。
 export const VIDEO_STATUS = {
   PENDING: "PENDING",
   PROCESSING: "PROCESSING",
   COMPLETED: "COMPLETED",
   TRANSCRIPT_NOT_FOUND: "TRANSCRIPT_NOT_FOUND",
-  RETRY_WAIT: "RETRY_WAIT",
   FAILED: "FAILED",
 };
 
