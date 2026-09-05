@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/uchi-stock/youtube-radar/compare/v1.2.2...v1.2.3) (2026-09-05)
+
+
+### Bug Fixes
+
+* **transcript:** 字幕取得の429を字幕なしと区別し詳細をログに出す ([#30](https://github.com/uchi-stock/youtube-radar/issues/30)) ([fa42891](https://github.com/uchi-stock/youtube-radar/commit/fa428918e7d5966414dae2b061ac9b94461b9352))
+
 ## [1.2.2](https://github.com/uchi-stock/youtube-radar/compare/v1.2.1...v1.2.2) (2026-09-05)
 
 
