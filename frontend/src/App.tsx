@@ -3,6 +3,7 @@ import { fetchChannelVideos, type ChannelVideo } from "./channelVideos";
 import { requestAccessToken, revokeAccessToken } from "./googleAuth";
 import { fetchGoogleUserInfo, type GoogleUserInfo } from "./googleUserInfo";
 import formatBuildTime from "./formatBuildTime"; // symlink
+import { clearLoginPreference, loadLoginPreference, saveLoginPreference } from "./loginPreference";
 import ShareButton from "./ShareButton"; // symlink
 import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
@@ -48,6 +49,7 @@ export default function App() {
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
   const [videoDetails, setVideoDetails] = useState<Record<string, VideoDetailEntry>>({});
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [returningUser, setReturningUser] = useState(() => loadLoginPreference());
 
   async function handleLogin() {
     if (!GOOGLE_CLIENT_ID) {
@@ -66,6 +68,10 @@ export default function App() {
       ]);
       setChannels(channelsResult);
       setUserInfo(userInfoResult);
+      if (userInfoResult.picture) {
+        saveLoginPreference({ name: userInfoResult.name, picture: userInfoResult.picture });
+        setReturningUser({ name: userInfoResult.name, picture: userInfoResult.picture });
+      }
       setStatus("loaded");
     } catch (error) {
       setStatus("error");
@@ -87,6 +93,8 @@ export default function App() {
     setVideosStatus("idle");
     setVideosErrorMessage(null);
     setUserMenuOpen(false);
+    clearLoginPreference();
+    setReturningUser(null);
   }
 
   async function handleSelectChannel(channel: SubscribedChannel) {
@@ -181,14 +189,23 @@ export default function App() {
         )}
       </div>
 
+      {status !== "loaded" && returningUser && (
+        <div className="d-flex align-items-center gap-2 mb-3">
+          <img src={returningUser.picture} alt="" width={40} height={40} className="rounded-circle" />
+          <span>おかえりなさい、{returningUser.name}さん</span>
+        </div>
+      )}
+
       {status !== "loaded" && (
         <>
-          <p>
-            お気に入りのYouTubeチャンネルをAIが定期巡回し、新着動画の文字起こしを要約・重要度判定してLINEへ通知するアプリです。
-            このWebアプリでは、登録チャンネル一覧・最新動画・要約状況を閲覧できます。
-          </p>
+          {!returningUser && (
+            <p>
+              お気に入りのYouTubeチャンネルをAIが定期巡回し、新着動画の文字起こしを要約・重要度判定してLINEへ通知するアプリです。
+              このWebアプリでは、登録チャンネル一覧・最新動画・要約状況を閲覧できます。
+            </p>
+          )}
           <button type="button" className="btn btn-primary" onClick={handleLogin} disabled={status === "loading"}>
-            {status === "loading" ? "読み込み中..." : "Googleでログイン"}
+            {status === "loading" ? "読み込み中..." : returningUser ? "ログインを再開" : "Googleでログイン"}
           </button>
         </>
       )}
