@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/uchi-stock/youtube-radar/compare/v1.5.0...v1.6.0) (2026-09-05)
+
+
+### Features
+
+* **pi:** 自宅ラズパイ用の字幕取得スクリプトを追加する ([#37](https://github.com/uchi-stock/youtube-radar/issues/37)) ([8bab80c](https://github.com/uchi-stock/youtube-radar/commit/8bab80c5f9631469849615c0dee4c825aaf5a53c))
+
 # [1.5.0](https://github.com/uchi-stock/youtube-radar/compare/v1.4.0...v1.5.0) (2026-09-05)
 
 
