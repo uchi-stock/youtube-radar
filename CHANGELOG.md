@@ -1,3 +1,10 @@
+# [1.13.0](https://github.com/uchi-stock/youtube-radar/compare/v1.12.0...v1.13.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** 動画タップ時に概要・動画の長さ・高評価数・コメント数・字幕有無を表示する ([#63](https://github.com/uchi-stock/youtube-radar/issues/63)) ([a23cbee](https://github.com/uchi-stock/youtube-radar/commit/a23cbee20c8259a65bd2f0a4dd2e35058334904c))
+
 # [1.12.0](https://github.com/uchi-stock/youtube-radar/compare/v1.11.0...v1.12.0) (2026-09-05)
 
 
