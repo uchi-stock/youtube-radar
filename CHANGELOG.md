@@ -1,3 +1,15 @@
+# [1.15.0](https://github.com/uchi-stock/youtube-radar/compare/v1.14.1...v1.15.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** ユーザーアイコンのプルダウンにログアウト・共有機能を、未ログイン画面にアプリ概要を追加する ([#71](https://github.com/uchi-stock/youtube-radar/issues/71)) ([2a497c6](https://github.com/uchi-stock/youtube-radar/commit/2a497c691c19989f091202f6842542036bc7d96b))
+
+
+### Reverts
+
+* **frontend:** FedCM有効化を元に戻す ([#68](https://github.com/uchi-stock/youtube-radar/issues/68)) ([546cd4e](https://github.com/uchi-stock/youtube-radar/commit/546cd4e33cabc26849d4c271ce19e697d2dc26d0))
+
 ## [1.14.1](https://github.com/uchi-stock/youtube-radar/compare/v1.14.0...v1.14.1) (2026-09-05)
 
 
