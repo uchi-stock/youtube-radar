@@ -7,6 +7,11 @@ export interface ChannelVideo {
   thumbnailUrl: string;
   publishedAt: string;
   viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  description: string;
+  duration: string;
+  captionAvailable: boolean;
 }
 
 interface ChannelsListResponse {
@@ -29,8 +34,49 @@ interface PlaylistItemsListResponse {
 interface VideosListResponse {
   items?: Array<{
     id: string;
-    statistics?: { viewCount?: string };
+    snippet?: { description?: string };
+    contentDetails?: { duration?: string; caption?: string };
+    statistics?: { viewCount?: string; likeCount?: string; commentCount?: string };
   }>;
+}
+
+interface VideoStatDetail {
+  viewCount: number;
+  likeCount: number;
+  commentCount: number;
+  description: string;
+  duration: string;
+  captionAvailable: boolean;
+}
+
+const EMPTY_DETAIL: VideoStatDetail = {
+  viewCount: 0,
+  likeCount: 0,
+  commentCount: 0,
+  description: "",
+  duration: "",
+  captionAvailable: false,
+};
+
+// ISO 8601形式（例: "PT1H2M3S"）の動画の長さを秒数に変換する。
+function parseIsoDuration(duration: string): number {
+  const match = duration.match(/^PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?$/);
+  if (!match) {
+    return 0;
+  }
+  const [, hours, minutes, seconds] = match;
+  return Number(hours ?? 0) * 3600 + Number(minutes ?? 0) * 60 + Number(seconds ?? 0);
+}
+
+function formatDuration(totalSeconds: number): string {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const paddedSeconds = String(seconds).padStart(2, "0");
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${paddedSeconds}`;
+  }
+  return `${minutes}:${paddedSeconds}`;
 }
 
 const CHANNELS_URL = "https://www.googleapis.com/youtube/v3/channels";
@@ -60,7 +106,7 @@ async function getRecentVideos(
   uploadsPlaylistId: string,
   accessToken: string,
   fetchImpl: typeof fetch,
-): Promise<Omit<ChannelVideo, "viewCount">[]> {
+): Promise<Pick<ChannelVideo, "videoId" | "title" | "thumbnailUrl" | "publishedAt">[]> {
   const params = new URLSearchParams({
     part: "snippet",
     playlistId: uploadsPlaylistId,
@@ -81,23 +127,35 @@ async function getRecentVideos(
   }));
 }
 
-async function getViewCounts(
+async function getVideoDetailsMap(
   videoIds: string[],
   accessToken: string,
   fetchImpl: typeof fetch,
-): Promise<Map<string, number>> {
+): Promise<Map<string, VideoStatDetail>> {
   if (videoIds.length === 0) {
     return new Map();
   }
-  const params = new URLSearchParams({ part: "statistics", id: videoIds.join(",") });
+  const params = new URLSearchParams({ part: "snippet,contentDetails,statistics", id: videoIds.join(",") });
   const res = await fetchImpl(`${VIDEOS_URL}?${params.toString()}`, {
     headers: { authorization: `Bearer ${accessToken}` },
   });
   if (!res.ok) {
-    throw new Error(`再生回数の取得に失敗しました: HTTP ${res.status}`);
+    throw new Error(`動画メタ情報の取得に失敗しました: HTTP ${res.status}`);
   }
   const data: VideosListResponse = await res.json();
-  return new Map((data.items ?? []).map((item) => [item.id, Number(item.statistics?.viewCount ?? 0)]));
+  return new Map(
+    (data.items ?? []).map((item) => [
+      item.id,
+      {
+        viewCount: Number(item.statistics?.viewCount ?? 0),
+        likeCount: Number(item.statistics?.likeCount ?? 0),
+        commentCount: Number(item.statistics?.commentCount ?? 0),
+        description: item.snippet?.description ?? "",
+        duration: formatDuration(parseIsoDuration(item.contentDetails?.duration ?? "")),
+        captionAvailable: item.contentDetails?.caption === "true",
+      },
+    ]),
+  );
 }
 
 export async function fetchChannelVideos(
@@ -111,11 +169,11 @@ export async function fetchChannelVideos(
   }
 
   const videos = await getRecentVideos(uploadsPlaylistId, accessToken, fetchImpl);
-  const viewCounts = await getViewCounts(
+  const details = await getVideoDetailsMap(
     videos.map((v) => v.videoId),
     accessToken,
     fetchImpl,
   );
 
-  return videos.map((video) => ({ ...video, viewCount: viewCounts.get(video.videoId) ?? 0 }));
+  return videos.map((video) => ({ ...video, ...(details.get(video.videoId) ?? EMPTY_DETAIL) }));
 }

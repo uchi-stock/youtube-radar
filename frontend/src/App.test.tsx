@@ -14,6 +14,19 @@ vi.mock("./youtubeApi");
 vi.mock("./channelVideos");
 vi.mock("./videoDetail");
 
+const MOCK_VIDEO = {
+  videoId: "v1",
+  title: "動画1",
+  thumbnailUrl: "",
+  publishedAt: "2026-09-01T00:00:00Z",
+  viewCount: 1234,
+  likeCount: 56,
+  commentCount: 7,
+  description: "概要文",
+  duration: "5:09",
+  captionAvailable: true,
+};
+
 function mockUserInfo() {
   vi.mocked(googleUserInfo.fetchGoogleUserInfo).mockResolvedValue({
     name: "テストユーザー",
@@ -89,7 +102,7 @@ describe("App", () => {
     ]);
     mockUserInfo();
     vi.mocked(channelVideos.fetchChannelVideos).mockResolvedValue([
-      { videoId: "v1", title: "動画1", thumbnailUrl: "", publishedAt: "2026-09-01T00:00:00Z", viewCount: 1234 },
+      MOCK_VIDEO,
     ]);
     const user = userEvent.setup();
 
@@ -100,7 +113,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "チャンネルA" }));
 
     await waitFor(() => expect(screen.getByText("動画1")).toBeInTheDocument());
-    expect(screen.getByText("1,234回視聴")).toBeInTheDocument();
+    expect(screen.getByText("1,234回視聴・5:09")).toBeInTheDocument();
     expect(channelVideos.fetchChannelVideos).toHaveBeenCalledWith("UC1", "token-123");
     expect(screen.queryByText("チャンネルA")).not.toBeInTheDocument();
   });
@@ -112,7 +125,7 @@ describe("App", () => {
     ]);
     mockUserInfo();
     vi.mocked(channelVideos.fetchChannelVideos).mockResolvedValue([
-      { videoId: "v1", title: "動画1", thumbnailUrl: "", publishedAt: "2026-09-01T00:00:00Z", viewCount: 1234 },
+      MOCK_VIDEO,
     ]);
     const user = userEvent.setup();
 
@@ -152,7 +165,7 @@ describe("App", () => {
     ]);
     mockUserInfo();
     vi.mocked(channelVideos.fetchChannelVideos).mockResolvedValue([
-      { videoId: "v1", title: "動画1", thumbnailUrl: "", publishedAt: "2026-09-01T00:00:00Z", viewCount: 1234 },
+      MOCK_VIDEO,
     ]);
     const user = userEvent.setup();
 
@@ -164,6 +177,20 @@ describe("App", () => {
 
     return user;
   }
+
+  it("動画をタップすると動画の長さ・概要・高評価数・コメント数・字幕有無を表示する", async () => {
+    vi.mocked(videoDetail.fetchVideoDetail).mockResolvedValue(null);
+    const user = await renderWithOneVideo();
+
+    expect(screen.getByText("1,234回視聴・5:09")).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: /動画1/ }));
+
+    await waitFor(() => expect(screen.getByText("概要文")).toBeInTheDocument());
+    expect(screen.getByText("56")).toBeInTheDocument();
+    expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByText("あり")).toBeInTheDocument();
+  });
 
   it("処理済みの動画をタップすると要約を表示する", async () => {
     vi.mocked(videoDetail.fetchVideoDetail).mockResolvedValue({

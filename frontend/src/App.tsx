@@ -27,6 +27,10 @@ function formatViewCount(viewCount: number): string {
   return `${viewCount.toLocaleString("ja-JP")}回視聴`;
 }
 
+function formatCount(count: number): string {
+  return count.toLocaleString("ja-JP");
+}
+
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const TRANSCRIPT_API_BASE_URL = import.meta.env.VITE_TRANSCRIPT_API_BASE_URL as string | undefined;
 
@@ -226,12 +230,29 @@ export default function App() {
                       )}
                       <div>
                         <div>{video.title}</div>
-                        <small className="text-muted">{formatViewCount(video.viewCount)}</small>
+                        <small className="text-muted">
+                          {formatViewCount(video.viewCount)}
+                          {video.duration && `・${video.duration}`}
+                        </small>
                       </div>
                     </button>
 
                     {expandedVideoId === video.videoId && (
                       <div className="mt-2 ps-2 border-start">
+                        <dl className="row small mb-2">
+                          <dt className="col-4 col-sm-3">高評価数</dt>
+                          <dd className="col-8 col-sm-9">{formatCount(video.likeCount)}</dd>
+                          <dt className="col-4 col-sm-3">コメント数</dt>
+                          <dd className="col-8 col-sm-9">{formatCount(video.commentCount)}</dd>
+                          <dt className="col-4 col-sm-3">字幕</dt>
+                          <dd className="col-8 col-sm-9">{video.captionAvailable ? "あり" : "なし"}</dd>
+                        </dl>
+                        {video.description && (
+                          <p className="small" style={{ whiteSpace: "pre-wrap" }}>
+                            {video.description}
+                          </p>
+                        )}
+
                         {!TRANSCRIPT_API_BASE_URL && (
                           <small className="text-muted">文字起こしAPIが設定されていません</small>
                         )}

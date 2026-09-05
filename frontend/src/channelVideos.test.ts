@@ -6,7 +6,7 @@ function jsonResponse(body: unknown, ok = true) {
 }
 
 describe("fetchChannelVideos", () => {
-  it("アップロード済みプレイリストから最新動画一覧を再生回数付きで取得する", async () => {
+  it("アップロード済みプレイリストから最新動画一覧をメタ情報付きで取得する", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(
@@ -37,8 +37,18 @@ describe("fetchChannelVideos", () => {
       .mockResolvedValueOnce(
         jsonResponse({
           items: [
-            { id: "v1", statistics: { viewCount: "1234" } },
-            { id: "v2", statistics: {} },
+            {
+              id: "v1",
+              snippet: { description: "概要1" },
+              contentDetails: { duration: "PT1H2M3S", caption: "true" },
+              statistics: { viewCount: "1234", likeCount: "56", commentCount: "7" },
+            },
+            {
+              id: "v2",
+              snippet: {},
+              contentDetails: { duration: "PT5M9S", caption: "false" },
+              statistics: {},
+            },
           ],
         }),
       );
@@ -46,12 +56,36 @@ describe("fetchChannelVideos", () => {
     const videos = await fetchChannelVideos("UC1", "token-123", fetchImpl);
 
     expect(videos).toEqual([
-      { videoId: "v1", title: "動画1", thumbnailUrl: "https://example.com/v1.jpg", publishedAt: "2026-09-01T00:00:00Z", viewCount: 1234 },
-      { videoId: "v2", title: "動画2", thumbnailUrl: "", publishedAt: "2026-09-02T00:00:00Z", viewCount: 0 },
+      {
+        videoId: "v1",
+        title: "動画1",
+        thumbnailUrl: "https://example.com/v1.jpg",
+        publishedAt: "2026-09-01T00:00:00Z",
+        viewCount: 1234,
+        likeCount: 56,
+        commentCount: 7,
+        description: "概要1",
+        duration: "1:02:03",
+        captionAvailable: true,
+      },
+      {
+        videoId: "v2",
+        title: "動画2",
+        thumbnailUrl: "",
+        publishedAt: "2026-09-02T00:00:00Z",
+        viewCount: 0,
+        likeCount: 0,
+        commentCount: 0,
+        description: "",
+        duration: "5:09",
+        captionAvailable: false,
+      },
     ]);
     const [channelsUrl, channelsInit] = fetchImpl.mock.calls[0];
     expect(channelsUrl).toContain("https://www.googleapis.com/youtube/v3/channels");
     expect(channelsInit.headers.authorization).toBe("Bearer token-123");
+    const [videosUrl] = fetchImpl.mock.calls[2];
+    expect(videosUrl).toContain("part=snippet%2CcontentDetails%2Cstatistics");
   });
 
   it("アップロード済みプレイリストが無い場合は空配列を返す", async () => {
