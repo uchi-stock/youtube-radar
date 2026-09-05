@@ -69,7 +69,7 @@ describe("fetchTranscript", () => {
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  it("トラック一覧の取得がHTTP 429で失敗した場合はACCESS_LIMITEDを返し詳細をログに出す", async () => {
+  it("トラック一覧の取得がHTTP 429で失敗した場合はACCESS_LIMITEDを返し詳細をログに出す（リトライ上限0）", async () => {
     const logger = { warn: vi.fn() };
     const fetchImpl = vi.fn().mockResolvedValue(
       textResponse("rate limited", {
@@ -79,9 +79,14 @@ describe("fetchTranscript", () => {
       }),
     );
 
-    const result = await fetchTranscript("v1", { fetchImpl, logger });
+    const result = await fetchTranscript("v1", {
+      fetchImpl,
+      logger,
+      retry: { maxRetries: 0 },
+    });
 
     expect(result).toEqual({ status: "TRANSCRIPT_ACCESS_LIMITED", transcript: null });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
     expect(logger.warn).toHaveBeenCalledTimes(1);
     const [message] = logger.warn.mock.calls[0];
     expect(message).toContain("429");
@@ -99,13 +104,13 @@ describe("fetchTranscript", () => {
     expect(result).toEqual({ status: "TRANSCRIPT_ERROR", transcript: null });
   });
 
-  it("本文取得がHTTP 429で失敗した場合はACCESS_LIMITEDを返す", async () => {
+  it("本文取得がHTTP 429で失敗した場合はACCESS_LIMITEDを返す（リトライ上限0）", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(textResponse('<transcript_list><track lang_code="ja"/></transcript_list>'))
       .mockResolvedValueOnce(textResponse("", { ok: false, status: 429 }));
 
-    const result = await fetchTranscript("v1", { fetchImpl });
+    const result = await fetchTranscript("v1", { fetchImpl, retry: { maxRetries: 0 } });
 
     expect(result).toEqual({ status: "TRANSCRIPT_ACCESS_LIMITED", transcript: null });
   });
@@ -119,5 +124,42 @@ describe("fetchTranscript", () => {
     const result = await fetchTranscript("v1", { fetchImpl });
 
     expect(result).toEqual({ status: "TRANSCRIPT_ERROR", transcript: null });
+  });
+
+  it("429が数回続いた後に成功すればリトライして取得できる（実時間は待たない）", async () => {
+    const sleepCalls = [];
+    const sleep = vi.fn(async (ms) => {
+      sleepCalls.push(ms);
+    });
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        textResponse("", { ok: false, status: 429, headers: { "retry-after": "1" } }),
+      )
+      .mockResolvedValueOnce(textResponse('<transcript_list><track lang_code="ja"/></transcript_list>'))
+      .mockResolvedValueOnce(textResponse('<text start="0">リトライ後に成功</text>'));
+
+    const result = await fetchTranscript("v1", {
+      fetchImpl,
+      retry: { maxRetries: 2, sleep },
+    });
+
+    expect(result).toEqual({ status: "OK", transcript: "リトライ後に成功" });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(sleepCalls).toEqual([1000]);
+  });
+
+  it("429がリトライ上限まで続いた場合は無制限にリトライせずACCESS_LIMITEDで打ち切る", async () => {
+    const sleep = vi.fn(async () => {});
+    const fetchImpl = vi.fn().mockResolvedValue(textResponse("", { ok: false, status: 429 }));
+
+    const result = await fetchTranscript("v1", {
+      fetchImpl,
+      retry: { maxRetries: 3, baseDelayMs: 10, sleep },
+    });
+
+    expect(result).toEqual({ status: "TRANSCRIPT_ACCESS_LIMITED", transcript: null });
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    expect(sleep).toHaveBeenCalledTimes(3);
   });
 });

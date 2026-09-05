@@ -2,6 +2,8 @@
 // 字幕プレイヤー向けの非公式timedtextエンドポイントを利用する。字幕が存在しない動画・
 // 取得に失敗した動画はnullを返し、呼び出し側で「文字起こしなし」として扱う。
 
+import { fetchWithRetry } from "./retry.js";
+
 // fetchTranscriptの失敗理由。呼び出し側（pipeline.js）はACCESS_LIMITEDを
 // 「字幕が存在しない（NOT_FOUND）」と区別して扱う（アクセス制限による一時的な取得不可のため）。
 export const TRANSCRIPT_NOT_FOUND = "TRANSCRIPT_NOT_FOUND";
@@ -76,9 +78,30 @@ async function timedFetch(fetchImpl, url) {
   return { res, timing: { startedAt, finishedAt } };
 }
 
-export async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch, logger = console } = {}) {
+// 429発生時は同一動画内の1リクエストにつき上限回数までバックオフしてリトライする。
+// 上限に達してもなお429の場合はACCESS_LIMITEDとして呼び出し元（pipeline.js）に返し、
+// それ以上リトライせず次回実行に委ねる（同一Lambda実行内で無制限リトライしない）。
+function fetchWithBackoff(fetchImpl, url, { videoId, logger, retry }) {
+  return fetchWithRetry(() => timedFetch(fetchImpl, url), {
+    ...retry,
+    onRetry: ({ attempt, maxRetries, delayMs }) => {
+      logger.warn?.(
+        `[${videoId}] HTTP 429のためリトライします（${attempt}/${maxRetries}回目、${Math.round(delayMs)}ms待機後に再試行）: ${url}`,
+      );
+    },
+  });
+}
+
+export async function fetchTranscript(
+  videoId,
+  { lang = "ja", fetchImpl = fetch, logger = console, retry = {} } = {},
+) {
   const listUrl = `https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(videoId)}`;
-  const { res: listRes, timing: listTiming } = await timedFetch(fetchImpl, listUrl);
+  const { res: listRes, timing: listTiming } = await fetchWithBackoff(fetchImpl, listUrl, {
+    videoId,
+    logger,
+    retry,
+  });
   if (!listRes.ok) {
     const bodyText = await listRes.text?.().catch(() => "");
     if (listRes.status === 429) {
@@ -104,7 +127,7 @@ export async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch,
     params.set("kind", track.kind);
   }
   const textUrl = `https://www.youtube.com/api/timedtext?${params.toString()}`;
-  const { res, timing } = await timedFetch(fetchImpl, textUrl);
+  const { res, timing } = await fetchWithBackoff(fetchImpl, textUrl, { videoId, logger, retry });
   if (!res.ok) {
     const bodyText = await res.text?.().catch(() => "");
     if (res.status === 429) {
