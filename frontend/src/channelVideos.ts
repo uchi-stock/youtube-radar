@@ -26,7 +26,7 @@ interface PlaylistItemsListResponse {
       resourceId: { videoId: string };
       title: string;
       publishedAt: string;
-      thumbnails?: { default?: { url?: string } };
+      thumbnails?: { default?: { url?: string }; medium?: { url?: string }; high?: { url?: string } };
     };
   }>;
 }
@@ -122,7 +122,11 @@ async function getRecentVideos(
   return (data.items ?? []).map((item) => ({
     videoId: item.snippet.resourceId.videoId,
     title: item.snippet.title,
-    thumbnailUrl: item.snippet.thumbnails?.default?.url ?? "",
+    thumbnailUrl:
+      item.snippet.thumbnails?.high?.url ??
+      item.snippet.thumbnails?.medium?.url ??
+      item.snippet.thumbnails?.default?.url ??
+      "",
     publishedAt: item.snippet.publishedAt,
   }));
 }
