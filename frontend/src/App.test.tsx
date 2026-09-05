@@ -45,6 +45,12 @@ describe("App", () => {
     expect(screen.getByText(`v${__APP_VERSION__}`, { exact: false })).toBeInTheDocument();
   });
 
+  it("ログイン前の画面にアプリ概要の説明を表示する", () => {
+    render(<App />);
+
+    expect(screen.getByText(/文字起こしを要約・重要度判定してLINEへ通知する/)).toBeInTheDocument();
+  });
+
   it("ログインボタンを表示し、クリックすると登録チャンネル一覧・ログインユーザーのアイコンを表示する", async () => {
     vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
     vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
@@ -62,6 +68,24 @@ describe("App", () => {
     expect(screen.getByText("登録チャンネル: 2件")).toBeInTheDocument();
     expect(youtubeApi.fetchSubscribedChannels).toHaveBeenCalledWith("token-123");
     expect(screen.getByAltText("テストユーザー")).toHaveAttribute("src", "https://example.com/icon.jpg");
+  });
+
+  it("ログインユーザーのアイコンをタップするとプルダウンメニューにログアウト・アプリリンク共有が表示される", async () => {
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
+    vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
+      { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
+    ]);
+    mockUserInfo();
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+    await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
+
+    await user.click(screen.getByAltText("テストユーザー"));
+
+    expect(screen.getByRole("button", { name: "ログアウト" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "アプリリンクを共有" })).toBeInTheDocument();
   });
 
   it("ログインに失敗した場合はエラーメッセージを表示する", async () => {
@@ -87,6 +111,7 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
     await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
 
+    await user.click(screen.getByAltText("テストユーザー"));
     await user.click(screen.getByRole("button", { name: "ログアウト" }));
 
     expect(googleAuth.revokeAccessToken).toHaveBeenCalledWith("token-123");
