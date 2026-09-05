@@ -9,7 +9,7 @@ jobs:
   ci:
     uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.7.3
     with:
-      packages: '[{"dir":"backend"},{"dir":"pi"}]'
+      packages: '[{"dir":"backend"},{"dir":"pi"},{"dir":"frontend","build":true,"node_version":22}]'
       node_version: 20
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}

@@ -32,5 +32,6 @@ Thumbs.db
 commit_msg*.txt
 # --- dev-standards managed: end ---
 
-# pi/.env.exampleはテンプレートのためコミット対象とする（.env.*の除外例外）
+# pi/.env.example・frontend/.env.exampleはテンプレートのためコミット対象とする（.env.*の除外例外）
 !pi/.env.example
+!frontend/.env.example

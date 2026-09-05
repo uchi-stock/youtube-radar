@@ -6,8 +6,10 @@
 
 ## 構成
 
-- `backend/`: パイプライン本体（Node.js）。フロントエンドは持たない
+- `backend/`: パイプライン本体（Node.js）
 - `pi/`: 自宅Raspberry Pi上で実行する字幕取得スクリプト（依存パッケージ無し）。セットアップ手順は[`pi/README.md`](pi/README.md)を参照
+- `frontend/`: Googleアカウントでログインし、そのアカウントの登録チャンネル一覧を表示するWebアプリ（React 19 + Vite + TypeScript + Bootstrap 5.3）。バックエンドを介さず、ブラウザから直接Google Identity Services・YouTube Data APIを呼び出す表示専用アプリで、ログアウトすると一覧は消える（定期巡回への組み込みは対象外）。ホスティングは別途対応予定（Issue #45）
+  - ローカルでの動作確認: `cd frontend && npm ci && npm run dev`。Google Cloud Consoleで発行済みのOAuthクライアント（`GOOGLE_OAUTH_CLIENT_ID`）の「承認済みのJavaScript生成元」に`http://localhost:5173`を追加した上で、`frontend/.env.local`に`VITE_GOOGLE_CLIENT_ID=<クライアントID>`を設定する（Client IDは秘密情報ではない）
 - 実行基盤: AWS Lambda（EventBridge Schedule）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions・AWS LambdaいずれのデータセンターIPからも、YouTubeの非公式字幕取得エンドポイントがHTTP 429で恒常的にブロックされることが判明した（Issue #16・#19・#24）ため、字幕取得自体は自宅Raspberry Pi（家庭用IP）に委ねる構成にした（Issue #35）
   - `discover`関数（`src/lambda.js`、6時間ごと）: YouTube Data APIで新着動画を検知し、DynamoDBに`PENDING`として登録するのみ
   - `transcriptApi`関数（`src/transcriptApiLambda.js`、API Gateway HTTP API）: 自宅Raspberry Piからの`GET /pending`（未処理動画一覧取得）・`POST /transcripts`（字幕取得結果の送信）を受け付け、字幕を受け取ったら要約〜LINE通知〜DynamoDBの状態更新まで行う。HTTP 429等で取得できなかった場合は`RETRY_WAIT`として次回のRaspberry Piからのポーリングに持ち越す
