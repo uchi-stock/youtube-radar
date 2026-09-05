@@ -59,24 +59,30 @@ AI処理が完了した動画をLINE Messaging APIで通知する。通知イメ
 
 ## 5. アーキテクチャ（MVP）
 
-当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。処理済み動画IDはDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
+当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。しかしAWS Lambda環境でも同様のHTTP 429が発生することが判明したため、429を「アクセス制限による一時保留」として扱う設計に変更し、新着検知とTranscript取得を別Lambda関数に分離した。動画単位の処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`RETRY_WAIT`/`FAILED`）はDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
 
 ```
 EventBridge Schedule（6時間ごと）
      ↓
-AWS Lambda
+discover Lambda
      ↓
 YouTube Data API（新着動画確認）
      ↓
-処理済み動画IDと比較（DynamoDB）
+DynamoDBにPENDINGとして登録
+
+EventBridge Schedule（30分ごと）
      ↓
-文字起こし取得
+transcriptWorker Lambda
+     ↓
+DynamoDBのPENDING/RETRY_WAIT動画を少数取得
+     ↓
+文字起こし取得（429時はRETRY_WAITとして次回に持ち越す）
      ↓
 LLM API（要約・重要度・視聴推奨度）
      ↓
 LINE Messaging API（通知）
      ↓
-処理済み動画IDをDynamoDBへ記録
+DynamoDBの状態をCOMPLETED等へ更新
 ```
 
 ## 6. エラー処理

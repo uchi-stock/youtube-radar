@@ -1,8 +1,10 @@
-import { runPipeline } from "./pipeline.js";
+import { runDiscovery } from "./discovery.js";
 import { createStore } from "./lib/dynamoStore.js";
 import { getAccessToken } from "./lib/googleAuth.js";
 import { fetchSubscribedChannels } from "./lib/subscriptions.js";
 
+// 新着検知用Lambda。YouTube Data APIで新着動画を確認し、DynamoDBにPENDINGとして登録するのみ。
+// Transcript取得・要約・LINE通知はtranscriptWorkerLambda.jsが別Lambdaとして行う。
 export async function handler() {
   const accessToken = await getAccessToken({
     clientId: process.env.GOOGLE_OAUTH_CLIENT_ID,
@@ -13,24 +15,8 @@ export async function handler() {
   console.log(`チャンネル登録一覧を${channels.length}件取得しました`);
 
   const store = createStore(process.env.PROCESSED_VIDEOS_TABLE);
-  const processedIds = await store.loadProcessedIds();
+  const results = await runDiscovery({ channels, store, env: process.env });
 
-  const results = await runPipeline({
-    channels,
-    processedIds,
-    markProcessed: (videoId) => store.markProcessed(videoId),
-    env: process.env,
-    deps: {
-      retry: {
-        maxRetries: Number(process.env.TRANSCRIPT_RETRY_MAX ?? 2),
-        baseDelayMs: Number(process.env.TRANSCRIPT_RETRY_BASE_DELAY_MS ?? 500),
-      },
-    },
-    maxVideosPerRun: Number(process.env.TRANSCRIPT_BATCH_SIZE ?? 5),
-  });
-
-  const failed = results.filter((r) => r.status === "failed");
-  console.log(`処理結果: 通知${results.length - failed.length}件 / 失敗${failed.length}件`);
-  // 個別動画の失敗はLambda全体の異常終了とは扱わない（次回実行でリトライする）。
-  return { notified: results.length - failed.length, failed: failed.length };
+  console.log(`新着検知結果: PENDING登録${results.length}件`);
+  return { pending: results.length };
 }
