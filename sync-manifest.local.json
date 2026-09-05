@@ -1,0 +1,8 @@
+{
+  "symlinks": [
+    { "source": "shared/ui/getAppVersionDefine.js", "target": "frontend/getAppVersionDefine.js" },
+    { "source": "shared/ui/formatBuildTime.js", "target": "frontend/src/formatBuildTime.js" },
+    { "source": "shared/ui/common-theme.css", "target": "frontend/src/common-theme.css" },
+    { "source": "shared/ui/bootstrap-theme.css", "target": "frontend/src/bootstrap-theme.css" }
+  ]
+}

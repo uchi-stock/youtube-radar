@@ -1,10 +1,16 @@
 /// <reference types="vitest/config" />
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import getAppVersionDefine from './getAppVersionDefine.js' // symlink
 
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  // semantic-releaseがバージョンを更新するリポジトリルートのpackage.jsonを参照する
+  // （frontend/package.jsonのversionは固定値のまま更新されないため）
+  define: {
+    ...getAppVersionDefine(new URL('../package.json', import.meta.url)),
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],

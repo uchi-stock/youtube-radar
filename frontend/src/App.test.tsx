@@ -3,22 +3,38 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import * as googleAuth from "./googleAuth";
+import * as googleUserInfo from "./googleUserInfo";
 import * as youtubeApi from "./youtubeApi";
 
 vi.mock("./googleAuth");
+vi.mock("./googleUserInfo");
 vi.mock("./youtubeApi");
+
+function mockUserInfo() {
+  vi.mocked(googleUserInfo.fetchGoogleUserInfo).mockResolvedValue({
+    name: "テストユーザー",
+    picture: "https://example.com/icon.jpg",
+  });
+}
 
 describe("App", () => {
   afterEach(() => {
     vi.resetAllMocks();
   });
 
-  it("ログインボタンを表示し、クリックすると登録チャンネル一覧を表示する", async () => {
+  it("タイトル横にアプリバージョンを表示する", () => {
+    render(<App />);
+
+    expect(screen.getByText(`v${__APP_VERSION__}`, { exact: false })).toBeInTheDocument();
+  });
+
+  it("ログインボタンを表示し、クリックすると登録チャンネル一覧・ログインユーザーのアイコンを表示する", async () => {
     vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
     vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
       { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
       { channelId: "UC2", title: "チャンネルB", thumbnailUrl: "" },
     ]);
+    mockUserInfo();
     const user = userEvent.setup();
 
     render(<App />);
@@ -28,6 +44,7 @@ describe("App", () => {
     expect(screen.getByText("チャンネルB")).toBeInTheDocument();
     expect(screen.getByText("登録チャンネル: 2件")).toBeInTheDocument();
     expect(youtubeApi.fetchSubscribedChannels).toHaveBeenCalledWith("token-123");
+    expect(screen.getByAltText("テストユーザー")).toHaveAttribute("src", "https://example.com/icon.jpg");
   });
 
   it("ログインに失敗した場合はエラーメッセージを表示する", async () => {
@@ -40,12 +57,13 @@ describe("App", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("access_denied"));
   });
 
-  it("ログアウトすると一覧が消えログインボタンが再表示される", async () => {
+  it("ログアウトすると一覧・アイコンが消えログインボタンが再表示される", async () => {
     vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
     vi.mocked(googleAuth.revokeAccessToken).mockResolvedValue(undefined);
     vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
       { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
     ]);
+    mockUserInfo();
     const user = userEvent.setup();
 
     render(<App />);
@@ -56,6 +74,7 @@ describe("App", () => {
 
     expect(googleAuth.revokeAccessToken).toHaveBeenCalledWith("token-123");
     expect(screen.queryByText("チャンネルA")).not.toBeInTheDocument();
+    expect(screen.queryByAltText("テストユーザー")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Googleでログイン" })).toBeInTheDocument();
   });
 });
