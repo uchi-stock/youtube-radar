@@ -22,9 +22,9 @@ export async function runPipeline({ channels, processedIds, markProcessed, env, 
         continue;
       }
       try {
-        const transcript = await fetchTranscript(video.videoId, { ...deps, logger });
-        if (!transcript) {
-          logger.warn(`[${video.videoId}] 文字起こしを取得できませんでした。スキップします`);
+        const { status, transcript } = await fetchTranscript(video.videoId, { ...deps, logger });
+        if (status !== "OK") {
+          logger.warn(`[${video.videoId}] 文字起こしを取得できませんでした（${status}）。スキップします`);
           continue;
         }
         const summary = await summarizeTranscript(video.title, transcript, env.GEMINI_API_KEY, deps);

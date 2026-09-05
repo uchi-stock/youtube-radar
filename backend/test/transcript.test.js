@@ -1,8 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { fetchTranscript } from "../src/lib/transcript.js";
 
-function textResponse(body, ok = true) {
-  return { ok, text: async () => body };
+function textResponse(body, { ok = true, status = 200, headers = {} } = {}) {
+  return {
+    ok,
+    status,
+    headers: { get: (name) => headers[name.toLowerCase()] ?? null },
+    text: async () => body,
+  };
 }
 
 describe("fetchTranscript", () => {
@@ -18,9 +23,9 @@ describe("fetchTranscript", () => {
         textResponse('<text start="0">Hello &amp; World</text><text start="1">こんにちは</text>'),
       );
 
-    const transcript = await fetchTranscript("v1", { fetchImpl });
+    const result = await fetchTranscript("v1", { fetchImpl });
 
-    expect(transcript).toBe("Hello & World こんにちは");
+    expect(result).toEqual({ status: "OK", transcript: "Hello & World こんにちは" });
     const [textUrl] = fetchImpl.mock.calls[1];
     expect(textUrl).toContain("lang=ja");
     expect(textUrl).not.toContain("kind=asr");
@@ -34,9 +39,9 @@ describe("fetchTranscript", () => {
       )
       .mockResolvedValueOnce(textResponse('<text start="0">自動生成字幕</text>'));
 
-    const transcript = await fetchTranscript("v1", { fetchImpl });
+    const result = await fetchTranscript("v1", { fetchImpl });
 
-    expect(transcript).toBe("自動生成字幕");
+    expect(result).toEqual({ status: "OK", transcript: "自動生成字幕" });
     const [textUrl] = fetchImpl.mock.calls[1];
     expect(textUrl).toContain("lang=ja");
     expect(textUrl).toContain("kind=asr");
@@ -48,38 +53,71 @@ describe("fetchTranscript", () => {
       .mockResolvedValueOnce(textResponse('<transcript_list><track lang_code="en"/></transcript_list>'))
       .mockResolvedValueOnce(textResponse('<text start="0">English captions</text>'));
 
-    const transcript = await fetchTranscript("v1", { fetchImpl });
+    const result = await fetchTranscript("v1", { fetchImpl });
 
-    expect(transcript).toBe("English captions");
+    expect(result).toEqual({ status: "OK", transcript: "English captions" });
     const [textUrl] = fetchImpl.mock.calls[1];
     expect(textUrl).toContain("lang=en");
   });
 
-  it("字幕トラックが1つも無い場合はnullを返す", async () => {
+  it("字幕トラックが1つも無い場合はNOT_FOUNDを返す", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(textResponse("<transcript_list></transcript_list>"));
 
-    const transcript = await fetchTranscript("v1", { fetchImpl });
+    const result = await fetchTranscript("v1", { fetchImpl });
 
-    expect(transcript).toBeNull();
+    expect(result).toEqual({ status: "TRANSCRIPT_NOT_FOUND", transcript: null });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 
-  it("トラック一覧の取得が失敗した場合はnullを返す", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue(textResponse("", false));
+  it("トラック一覧の取得がHTTP 429で失敗した場合はACCESS_LIMITEDを返し詳細をログに出す", async () => {
+    const logger = { warn: vi.fn() };
+    const fetchImpl = vi.fn().mockResolvedValue(
+      textResponse("rate limited", {
+        ok: false,
+        status: 429,
+        headers: { "retry-after": "12", "content-type": "text/plain" },
+      }),
+    );
 
-    const transcript = await fetchTranscript("v1", { fetchImpl });
+    const result = await fetchTranscript("v1", { fetchImpl, logger });
 
-    expect(transcript).toBeNull();
+    expect(result).toEqual({ status: "TRANSCRIPT_ACCESS_LIMITED", transcript: null });
+    expect(logger.warn).toHaveBeenCalledTimes(1);
+    const [message] = logger.warn.mock.calls[0];
+    expect(message).toContain("429");
+    expect(message).toContain("Retry-After: 12");
+    expect(message).toContain("Content-Type: text/plain");
+    expect(message).toContain("host: www.youtube.com");
+    expect(message).not.toMatch(/api[_-]?key/i);
   });
 
-  it("本文取得が失敗した場合はnullを返す", async () => {
+  it("トラック一覧の取得が429以外のエラーで失敗した場合はERRORを返す", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(textResponse("", { ok: false, status: 500 }));
+
+    const result = await fetchTranscript("v1", { fetchImpl });
+
+    expect(result).toEqual({ status: "TRANSCRIPT_ERROR", transcript: null });
+  });
+
+  it("本文取得がHTTP 429で失敗した場合はACCESS_LIMITEDを返す", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(textResponse('<transcript_list><track lang_code="ja"/></transcript_list>'))
-      .mockResolvedValueOnce(textResponse("", false));
+      .mockResolvedValueOnce(textResponse("", { ok: false, status: 429 }));
 
-    const transcript = await fetchTranscript("v1", { fetchImpl });
+    const result = await fetchTranscript("v1", { fetchImpl });
 
-    expect(transcript).toBeNull();
+    expect(result).toEqual({ status: "TRANSCRIPT_ACCESS_LIMITED", transcript: null });
+  });
+
+  it("本文取得が429以外のエラーで失敗した場合はERRORを返す", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(textResponse('<transcript_list><track lang_code="ja"/></transcript_list>'))
+      .mockResolvedValueOnce(textResponse("", { ok: false, status: 500 }));
+
+    const result = await fetchTranscript("v1", { fetchImpl });
+
+    expect(result).toEqual({ status: "TRANSCRIPT_ERROR", transcript: null });
   });
 });
