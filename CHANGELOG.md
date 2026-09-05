@@ -1,3 +1,10 @@
+# [1.16.0](https://github.com/uchi-stock/youtube-radar/compare/v1.15.1...v1.16.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** 再訪問時にログイン導線をパーソナライズする ([#74](https://github.com/uchi-stock/youtube-radar/issues/74)) ([4c5e2ae](https://github.com/uchi-stock/youtube-radar/commit/4c5e2ae90928ab4cbfb99fbffee56a40db586f3b))
+
 ## [1.15.1](https://github.com/uchi-stock/youtube-radar/compare/v1.15.0...v1.15.1) (2026-09-05)
 
 
