@@ -160,7 +160,13 @@ export default function App() {
               />
             </button>
             {userMenuOpen && (
-              <ul className="dropdown-menu dropdown-menu-end show position-absolute">
+              <ul
+                className="dropdown-menu show position-absolute"
+                // .dropdown-menu-endはBootstrap JS（Popper.js）がdata-bs-popper属性を付与した
+                // 場合のみ右端基準になる仕様のため、独自のReact stateで開閉制御する本実装では
+                // 効かない。明示的なインラインスタイルで右端基準に配置し、画面右へのはみ出しを防ぐ。
+                style={{ right: 0, left: "auto" }}
+              >
                 <li>
                   <button type="button" className="dropdown-item" onClick={handleLogout}>
                     ログアウト
