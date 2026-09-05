@@ -1,3 +1,10 @@
+## [1.14.1](https://github.com/uchi-stock/youtube-radar/compare/v1.14.0...v1.14.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **frontend:** ログイン時のアカウント選択二重表示をFedCM有効化で解消する ([#67](https://github.com/uchi-stock/youtube-radar/issues/67)) ([238f615](https://github.com/uchi-stock/youtube-radar/commit/238f61511f8fd45159e43f01d0fe5bd3e89c26df))
+
 # [1.14.0](https://github.com/uchi-stock/youtube-radar/compare/v1.13.0...v1.14.0) (2026-09-05)
 
 
