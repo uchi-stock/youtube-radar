@@ -26,6 +26,7 @@ export async function handler() {
         baseDelayMs: Number(process.env.TRANSCRIPT_RETRY_BASE_DELAY_MS ?? 500),
       },
     },
+    maxVideosPerRun: Number(process.env.TRANSCRIPT_BATCH_SIZE ?? 5),
   });
 
   const failed = results.filter((r) => r.status === "failed");

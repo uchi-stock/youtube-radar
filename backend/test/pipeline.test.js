@@ -225,4 +225,55 @@ describe("runPipeline", () => {
     expect(results).toEqual([{ videoId: "v1", status: "failed", error: "LLM summarize failed: 500" }]);
     expect(processedIds.has("v1")).toBe(false);
   });
+
+  it("maxVideosPerRunを超える未処理動画は今回処理せず次回に持ち越す", async () => {
+    const twoChannels = [
+      { channelId: "UC1", name: "チャンネルA", enabled: true },
+      { channelId: "UC2", name: "チャンネルB", enabled: true },
+    ];
+    const fetchImpl = vi
+      .fn()
+      // チャンネルA: channels.list, playlistItems.list, timedtext(list), timedtext(本文)
+      .mockResolvedValueOnce(
+        jsonResponse({ items: [{ contentDetails: { relatedPlaylists: { uploads: "PL1" } } }] }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [{ snippet: { resourceId: { videoId: "v1" }, title: "t1", publishedAt: "2026-09-01" } }],
+        }),
+      )
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        text: async () => '<transcript_list><track lang_code="ja"/></transcript_list>',
+      })
+      .mockResolvedValueOnce({ ok: true, status: 200, text: async () => '<text start="0">本文</text>' })
+      .mockResolvedValueOnce(
+        jsonResponse({
+          candidates: [
+            { content: { parts: [{ text: JSON.stringify({ summary: ["a", "b", "c"], importance: 3, recommendation: 3 }) }] } },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(jsonResponse({}));
+    // チャンネルBは上限到達後は新着検知すら行われないため、これ以上のモックは登録しない
+
+    const processedIds = new Set();
+    const warn = vi.fn();
+    const results = await runPipeline({
+      channels: twoChannels,
+      processedIds,
+      markProcessed: vi.fn(),
+      env,
+      deps: { fetchImpl },
+      logger: { error: vi.fn(), warn },
+      maxVideosPerRun: 1,
+    });
+
+    expect(results).toEqual([{ videoId: "v1", status: "reported", lineNotified: true }]);
+    expect(processedIds.has("v1")).toBe(true);
+    // チャンネルBのfetchLatestVideos（channels.list）が呼ばれていないこと
+    expect(fetchImpl).toHaveBeenCalledTimes(6);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("処理件数上限"));
+  });
 });

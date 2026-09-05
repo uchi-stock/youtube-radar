@@ -17,6 +17,8 @@ provider:
     # 429（アクセス制限）発生時のリトライ上限・待機時間のベース値。実際の429発生状況を見ながら調整する。
     TRANSCRIPT_RETRY_MAX: ${env:TRANSCRIPT_RETRY_MAX, '2'}
     TRANSCRIPT_RETRY_BASE_DELAY_MS: ${env:TRANSCRIPT_RETRY_BASE_DELAY_MS, '500'}
+    # 1回の実行でTranscript取得を試みる動画数の上限。429の発生状況を見ながら調整する。
+    TRANSCRIPT_BATCH_SIZE: ${env:TRANSCRIPT_BATCH_SIZE, '5'}
   iam:
     role:
       statements:
