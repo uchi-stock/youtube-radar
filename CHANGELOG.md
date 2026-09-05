@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/uchi-stock/youtube-radar/compare/v1.3.0...v1.4.0) (2026-09-05)
+
+
+### Features
+
+* **pipeline:** 新着検知とTranscript取得をジョブ分離する ([#34](https://github.com/uchi-stock/youtube-radar/issues/34)) ([2194c16](https://github.com/uchi-stock/youtube-radar/commit/2194c16b8ef83465a40648ec91e94ecf8fa57516))
+
 # [1.3.0](https://github.com/uchi-stock/youtube-radar/compare/v1.2.5...v1.3.0) (2026-09-05)
 
 
