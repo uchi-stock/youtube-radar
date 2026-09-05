@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/uchi-stock/youtube-radar/compare/v1.6.1...v1.7.0) (2026-09-05)
+
+
+### Features
+
+* **pi:** cron実行時にgit pullしてコードを自動更新する ([#41](https://github.com/uchi-stock/youtube-radar/issues/41)) ([309ff8c](https://github.com/uchi-stock/youtube-radar/commit/309ff8cfe638fcfe49ec221f2bda3df798104b63))
+
 ## [1.6.1](https://github.com/uchi-stock/youtube-radar/compare/v1.6.0...v1.6.1) (2026-09-05)
 
 
