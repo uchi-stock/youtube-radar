@@ -40,6 +40,18 @@ jobs:
             echo '```'
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: フロントエンドのCloudFrontドメインを確認
+        run: |
+          cloudfront_domain=$(aws cloudformation describe-stacks \
+            --stack-name youtube-radar-frontend-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDomain'].OutputValue" \
+            --output text)
+
+          {
+            echo '## frontend CloudFront domain'
+            echo "https://${cloudfront_domain}"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Call transcriptApi GET /pending (Raspberry Pi向けAPIの疎通確認)
         run: |
           api_url=$(aws cloudformation describe-stacks \
