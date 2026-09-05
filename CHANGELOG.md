@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/uchi-stock/youtube-radar/compare/v1.10.0...v1.10.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **cd:** deploy-frontendのcheckoutでdev-standardsサブモジュールを取得する ([#55](https://github.com/uchi-stock/youtube-radar/issues/55)) ([0ed1b0c](https://github.com/uchi-stock/youtube-radar/commit/0ed1b0c6ccac773e3623c419e0c4259ade736230))
+
 # [1.10.0](https://github.com/uchi-stock/youtube-radar/compare/v1.9.1...v1.10.0) (2026-09-05)
 
 
