@@ -23,6 +23,7 @@ declare global {
             client_id: string;
             scope: string;
             callback: (response: TokenResponse) => void;
+            use_fedcm_for_prompt?: boolean;
           }) => { requestAccessToken: () => void };
           revoke: (accessToken: string, done: () => void) => void;
         };
@@ -42,6 +43,9 @@ export function requestAccessToken(clientId: string): Promise<string> {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: SCOPES,
+      // サードパーティCookie制限（iOS SafariのITP等）下でアカウント選択が二重に
+      // 表示される既知の問題を避けるため、FedCMベースのフローを有効にする。
+      use_fedcm_for_prompt: true,
       callback: (response) => {
         if (response.error || !response.access_token) {
           reject(new Error(response.error ?? "アクセストークンの取得に失敗しました"));
