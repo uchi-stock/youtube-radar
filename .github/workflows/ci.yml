@@ -9,7 +9,11 @@ jobs:
   ci:
     uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.7.3
     with:
-      packages: '[{"dir":"backend"},{"dir":"pi"},{"dir":"frontend","build":true,"node_version":22}]'
+      # coverage_threshold: backend/frontendはvitest --coverageでcoverage-summary.jsonを
+      # 出力する構成のため、dev-standards標準のcheck-coverage-threshold複合actionで80%を
+      # 下回った場合にCIを失敗させる。piはnode --testのみでdev-standards側もカバレッジ計測が
+      # 標準化されていないため対象外（Issue #76）
+      packages: '[{"dir":"backend","coverage_threshold":80},{"dir":"pi"},{"dir":"frontend","build":true,"node_version":22,"coverage_threshold":80}]'
       node_version: 20
       # frontendがdev-standardsのshared/ui配下をsymlink経由で参照するため、
       # package-testジョブでもdev-standardsサブモジュールをチェックアウトする必要がある
