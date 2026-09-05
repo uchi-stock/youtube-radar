@@ -5,12 +5,14 @@ import App from "./App";
 import * as channelVideos from "./channelVideos";
 import * as googleAuth from "./googleAuth";
 import * as googleUserInfo from "./googleUserInfo";
+import * as videoDetail from "./videoDetail";
 import * as youtubeApi from "./youtubeApi";
 
 vi.mock("./googleAuth");
 vi.mock("./googleUserInfo");
 vi.mock("./youtubeApi");
 vi.mock("./channelVideos");
+vi.mock("./videoDetail");
 
 function mockUserInfo() {
   vi.mocked(googleUserInfo.fetchGoogleUserInfo).mockResolvedValue({
@@ -141,5 +143,71 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: "チャンネルA" }));
 
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("HTTP 403"));
+  });
+
+  async function renderWithOneVideo() {
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
+    vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
+      { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
+    ]);
+    mockUserInfo();
+    vi.mocked(channelVideos.fetchChannelVideos).mockResolvedValue([
+      { videoId: "v1", title: "動画1", thumbnailUrl: "", publishedAt: "2026-09-01T00:00:00Z", viewCount: 1234 },
+    ]);
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+    await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "チャンネルA" }));
+    await waitFor(() => expect(screen.getByText("動画1")).toBeInTheDocument());
+
+    return user;
+  }
+
+  it("処理済みの動画をタップすると要約を表示する", async () => {
+    vi.mocked(videoDetail.fetchVideoDetail).mockResolvedValue({
+      videoId: "v1",
+      status: "COMPLETED",
+      summary: { summary: ["要点1", "要点2", "要点3"], importance: 4, recommendation: 5 },
+    });
+    const user = await renderWithOneVideo();
+
+    await user.click(screen.getByRole("button", { name: /動画1/ }));
+
+    await waitFor(() => expect(screen.getByText("要点1")).toBeInTheDocument());
+    expect(screen.getByText("要点2")).toBeInTheDocument();
+    expect(screen.getByText("要点3")).toBeInTheDocument();
+    expect(videoDetail.fetchVideoDetail).toHaveBeenCalledWith("v1", "https://api.example.com");
+  });
+
+  it("未処理の動画をタップするとその旨を表示する", async () => {
+    vi.mocked(videoDetail.fetchVideoDetail).mockResolvedValue(null);
+    const user = await renderWithOneVideo();
+
+    await user.click(screen.getByRole("button", { name: /動画1/ }));
+
+    await waitFor(() => expect(screen.getByText("未処理（まだ巡回対象に登録されていません）")).toBeInTheDocument());
+  });
+
+  it("処理中の動画をタップすると処理中である旨を表示する", async () => {
+    vi.mocked(videoDetail.fetchVideoDetail).mockResolvedValue({ videoId: "v1", status: "PENDING", summary: null });
+    const user = await renderWithOneVideo();
+
+    await user.click(screen.getByRole("button", { name: /動画1/ }));
+
+    await waitFor(() => expect(screen.getByText("文字起こし処理待ちです")).toBeInTheDocument());
+  });
+
+  it("もう一度タップすると詳細が閉じる", async () => {
+    vi.mocked(videoDetail.fetchVideoDetail).mockResolvedValue({ videoId: "v1", status: "PENDING", summary: null });
+    const user = await renderWithOneVideo();
+
+    await user.click(screen.getByRole("button", { name: /動画1/ }));
+    await waitFor(() => expect(screen.getByText("文字起こし処理待ちです")).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: /動画1/ }));
+
+    expect(screen.queryByText("文字起こし処理待ちです")).not.toBeInTheDocument();
   });
 });

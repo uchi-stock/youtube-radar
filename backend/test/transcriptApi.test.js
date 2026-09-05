@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getPendingVideos, submitTranscriptResult } from "../src/transcriptApi.js";
+import { getPendingVideos, getVideoDetail, submitTranscriptResult } from "../src/transcriptApi.js";
 import { VIDEO_STATUS } from "../src/lib/dynamoStore.js";
 
 function jsonResponse(body, ok = true) {
@@ -36,6 +36,42 @@ describe("getPendingVideos", () => {
   });
 });
 
+describe("getVideoDetail", () => {
+  it("登録済みの動画の処理状態・要約を返す", async () => {
+    const summary = { summary: ["a", "b", "c"], importance: 3, recommendation: 3 };
+    const store = fakeStore({
+      items: { v1: { ...video, status: VIDEO_STATUS.COMPLETED, summary } },
+    });
+
+    const detail = await getVideoDetail({ store, videoId: "v1" });
+
+    expect(detail).toEqual({
+      videoId: "v1",
+      status: VIDEO_STATUS.COMPLETED,
+      channelName: video.channelName,
+      title: video.title,
+      publishedAt: video.publishedAt,
+      summary,
+    });
+  });
+
+  it("要約がまだ無い場合はsummaryにnullを返す", async () => {
+    const store = fakeStore({ items: { v1: { ...video, status: VIDEO_STATUS.PENDING } } });
+
+    const detail = await getVideoDetail({ store, videoId: "v1" });
+
+    expect(detail?.summary).toBeNull();
+  });
+
+  it("未登録のvideoIdの場合はnullを返す", async () => {
+    const store = fakeStore();
+
+    const detail = await getVideoDetail({ store, videoId: "unknown" });
+
+    expect(detail).toBeNull();
+  });
+});
+
 describe("submitTranscriptResult", () => {
   it("字幕を受け取ったら要約・LINE通知・COMPLETED更新まで行う", async () => {
     const fetchImpl = vi
@@ -59,7 +95,11 @@ describe("submitTranscriptResult", () => {
     });
 
     expect(result).toEqual({ videoId: "v1", status: "reported", lineNotified: true });
-    expect(store.setStatus).toHaveBeenCalledWith("v1", VIDEO_STATUS.COMPLETED, expect.any(Object));
+    expect(store.setStatus).toHaveBeenCalledWith(
+      "v1",
+      VIDEO_STATUS.COMPLETED,
+      expect.objectContaining({ summary: expect.any(Object) }),
+    );
   });
 
   it("status: NOT_FOUNDが指定された場合はTRANSCRIPT_NOT_FOUNDにする", async () => {

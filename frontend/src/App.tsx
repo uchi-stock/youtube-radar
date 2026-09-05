@@ -3,16 +3,32 @@ import { fetchChannelVideos, type ChannelVideo } from "./channelVideos";
 import { requestAccessToken, revokeAccessToken } from "./googleAuth";
 import { fetchGoogleUserInfo, type GoogleUserInfo } from "./googleUserInfo";
 import formatBuildTime from "./formatBuildTime"; // symlink
+import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
 
 type Status = "idle" | "loading" | "loaded" | "error";
 type VideosStatus = "idle" | "loading" | "loaded" | "error";
+
+interface VideoDetailEntry {
+  state: "loading" | "loaded" | "error";
+  detail?: VideoDetail | null;
+  errorMessage?: string;
+}
+
+const PROCESSING_STATUS_LABEL: Record<string, string> = {
+  PENDING: "文字起こし処理待ちです",
+  PROCESSING: "文字起こし処理中です",
+  RETRY_WAIT: "文字起こし処理待ちです",
+  TRANSCRIPT_NOT_FOUND: "字幕が見つかりませんでした",
+  FAILED: "要約に失敗しました",
+};
 
 function formatViewCount(viewCount: number): string {
   return `${viewCount.toLocaleString("ja-JP")}回視聴`;
 }
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
+const TRANSCRIPT_API_BASE_URL = import.meta.env.VITE_TRANSCRIPT_API_BASE_URL as string | undefined;
 
 export default function App() {
   const [status, setStatus] = useState<Status>("idle");
@@ -24,6 +40,8 @@ export default function App() {
   const [videos, setVideos] = useState<ChannelVideo[]>([]);
   const [videosStatus, setVideosStatus] = useState<VideosStatus>("idle");
   const [videosErrorMessage, setVideosErrorMessage] = useState<string | null>(null);
+  const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
+  const [videoDetails, setVideoDetails] = useState<Record<string, VideoDetailEntry>>({});
 
   async function handleLogin() {
     if (!GOOGLE_CLIENT_ID) {
@@ -83,6 +101,30 @@ export default function App() {
     setVideos([]);
     setVideosStatus("idle");
     setVideosErrorMessage(null);
+    setExpandedVideoId(null);
+    setVideoDetails({});
+  }
+
+  async function handleToggleVideo(videoId: string) {
+    if (expandedVideoId === videoId) {
+      setExpandedVideoId(null);
+      return;
+    }
+    setExpandedVideoId(videoId);
+
+    if (!TRANSCRIPT_API_BASE_URL || videoDetails[videoId]) {
+      return;
+    }
+    setVideoDetails((prev) => ({ ...prev, [videoId]: { state: "loading" } }));
+    try {
+      const detail = await fetchVideoDetail(videoId, TRANSCRIPT_API_BASE_URL);
+      setVideoDetails((prev) => ({ ...prev, [videoId]: { state: "loaded", detail } }));
+    } catch (error) {
+      setVideoDetails((prev) => ({
+        ...prev,
+        [videoId]: { state: "error", errorMessage: error instanceof Error ? error.message : String(error) },
+      }));
+    }
   }
 
   return (
@@ -170,17 +212,60 @@ export default function App() {
 
           {videosStatus === "loaded" && (
             <ul className="list-group">
-              {videos.map((video) => (
-                <li key={video.videoId} className="list-group-item d-flex align-items-center gap-2">
-                  {video.thumbnailUrl && (
-                    <img src={video.thumbnailUrl} alt="" width={64} height={48} />
-                  )}
-                  <div>
-                    <div>{video.title}</div>
-                    <small className="text-muted">{formatViewCount(video.viewCount)}</small>
-                  </div>
-                </li>
-              ))}
+              {videos.map((video) => {
+                const detailEntry = videoDetails[video.videoId];
+                return (
+                  <li key={video.videoId} className="list-group-item">
+                    <button
+                      type="button"
+                      className="btn btn-link p-0 text-decoration-none text-reset d-flex align-items-center gap-2 w-100 text-start"
+                      onClick={() => handleToggleVideo(video.videoId)}
+                    >
+                      {video.thumbnailUrl && (
+                        <img src={video.thumbnailUrl} alt="" width={64} height={48} />
+                      )}
+                      <div>
+                        <div>{video.title}</div>
+                        <small className="text-muted">{formatViewCount(video.viewCount)}</small>
+                      </div>
+                    </button>
+
+                    {expandedVideoId === video.videoId && (
+                      <div className="mt-2 ps-2 border-start">
+                        {!TRANSCRIPT_API_BASE_URL && (
+                          <small className="text-muted">文字起こしAPIが設定されていません</small>
+                        )}
+
+                        {detailEntry?.state === "loading" && <small className="text-muted">処理状況を確認中...</small>}
+
+                        {detailEntry?.state === "error" && detailEntry.errorMessage && (
+                          <small className="text-danger" role="alert">
+                            {detailEntry.errorMessage}
+                          </small>
+                        )}
+
+                        {detailEntry?.state === "loaded" && detailEntry.detail === null && (
+                          <small className="text-muted">未処理（まだ巡回対象に登録されていません）</small>
+                        )}
+
+                        {detailEntry?.state === "loaded" &&
+                          detailEntry.detail &&
+                          (detailEntry.detail.status === "COMPLETED" && detailEntry.detail.summary ? (
+                            <ul className="mb-0 ps-3">
+                              {detailEntry.detail.summary.summary.map((line, i) => (
+                                <li key={i}>{line}</li>
+                              ))}
+                            </ul>
+                          ) : (
+                            <small className="text-muted">
+                              {PROCESSING_STATUS_LABEL[detailEntry.detail.status] ?? detailEntry.detail.status}
+                            </small>
+                          ))}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </>

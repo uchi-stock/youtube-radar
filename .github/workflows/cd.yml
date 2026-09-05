@@ -35,7 +35,9 @@ jobs:
           PI_API_KEY: ${{ secrets.PI_API_KEY }}
 
   deploy-frontend:
-    needs: cd
+    # 動画詳細（GET /videos/{videoId}）のAPIエンドポイントURLをbackendのCloudFormation Outputsから
+    # 取得してビルドに渡すため、backendのデプロイ完了を待つ
+    needs: [cd, deploy-backend]
     runs-on: ubuntu-latest
     steps:
       # frontendがdev-standardsのshared/ui配下をsymlink経由で参照するため、
@@ -49,12 +51,26 @@ jobs:
           node-version: "22"
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Get transcript API base URL
+        id: transcript_api
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-1
+        run: |
+          url=$(aws cloudformation describe-stacks \
+            --stack-name youtube-radar-pipeline-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='HttpApiUrl'].OutputValue" \
+            --output text)
+          echo "url=${url}" >> "$GITHUB_OUTPUT"
       - name: Build
         working-directory: frontend
         run: npm run build
         env:
           # Client IDは秘密情報ではないため、既存のバックエンド用Secretをそのまま流用する
           VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          # HttpApiUrlも秘密情報ではない（読み取り専用の公開エンドポイントのURL）
+          VITE_TRANSCRIPT_API_BASE_URL: ${{ steps.transcript_api.outputs.url }}
       - name: Sync to S3 and invalidate CloudFront
         working-directory: frontend
         env:
