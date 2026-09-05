@@ -1,3 +1,10 @@
+## [1.9.1](https://github.com/uchi-stock/youtube-radar/compare/v1.9.0...v1.9.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **frontend:** oslsを導入しdeploy-frontendのCLI解決を修正する ([#49](https://github.com/uchi-stock/youtube-radar/issues/49)) ([f65cc44](https://github.com/uchi-stock/youtube-radar/commit/f65cc44aca2d05d63288929f861fccb0f4909980))
+
 # [1.9.0](https://github.com/uchi-stock/youtube-radar/compare/v1.8.0...v1.9.0) (2026-09-05)
 
 
