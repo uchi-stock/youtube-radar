@@ -16,10 +16,10 @@ AWS（GitHub Actions・AWS Lambda等のデータセンターIP）からのYouTub
 
 Node.js 18以降が必要（グローバルの`fetch`を使用するため）。依存パッケージは無い。
 
-1. このリポジトリを**git cloneで**Raspberry Piへ配置する（`run.sh`が起動時に`git pull`でリポジトリを最新化するため、cloneした状態を維持する必要がある。zip配布等でのコピーは不可）
+1. このリポジトリの**`main`ブランチを明示的に指定して**git cloneでRaspberry Piへ配置する（`run.sh`が起動時に`origin/main`から`git fetch`・`merge --ff-only`でリポジトリを最新化するため、cloneした状態を維持する必要がある。zip配布等でのコピーは不可。このリポジトリのGitHub既定ブランチはClaude Codeの作業用ブランチになっており頻繁に書き換わるため、`-b main`を省略して素朴に`git clone`すると意図しないブランチがチェックアウトされる点に注意）
 
    ```sh
-   git clone https://github.com/uchi-stock/youtube-radar.git
+   git clone -b main https://github.com/uchi-stock/youtube-radar.git
    ```
 
 2. AWSのAPI Gateway URL（`API_BASE_URL`）を確認する

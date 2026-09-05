@@ -9,12 +9,14 @@ REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 cd "$REPO_DIR"
 
-# デプロイ専用チェックアウトである前提のため、ローカル変更とのマージが必要になる
-# 状況（fast-forwardできない）は失敗として扱い、警告を出しつつ既存のコードで実行を続行する。
-# ネットワーク不通等でgit pull自体に失敗した場合も同様に扱う（更新できないことを理由に
+# リポジトリの既定ブランチ設定やローカルのチェックアウト状態（ブランチ名・追跡設定）に
+# 依存せず、常にorigin/mainを明示的に対象としてfetch・fast-forwardする。デプロイ専用
+# チェックアウトである前提のため、ローカル変更とのマージが必要になる状況
+# （fast-forwardできない）は失敗として扱い、警告を出しつつ既存のコードで実行を続行する。
+# ネットワーク不通等でgit fetch自体に失敗した場合も同様に扱う（更新できないことを理由に
 # 定期実行を止めない）。
-if ! git pull --ff-only 2>/tmp/youtube-radar-pi-git-pull.log; then
-  echo "警告: git pull --ff-onlyに失敗しました。既存のコードで実行を続行します" >&2
+if ! { git fetch origin main && git merge --ff-only origin/main; } >/tmp/youtube-radar-pi-git-pull.log 2>&1; then
+  echo "警告: origin/mainへの更新（fetch/merge --ff-only）に失敗しました。既存のコードで実行を続行します" >&2
   cat /tmp/youtube-radar-pi-git-pull.log >&2
 fi
 
