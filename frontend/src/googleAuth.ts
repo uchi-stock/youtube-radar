@@ -3,7 +3,11 @@
 // バックエンドを介さず、ブラウザ内で完結するアクセストークン取得のみを行う（表示専用のため
 // リフレッシュトークンの取得・保存は行わない。トークンの有効期限が切れたら再ログインする）。
 
-const YOUTUBE_READONLY_SCOPE = "https://www.googleapis.com/auth/youtube.readonly";
+// userinfo.profileは右上に表示するログインユーザーのアイコン取得のために追加している。
+const SCOPES = [
+  "https://www.googleapis.com/auth/youtube.readonly",
+  "https://www.googleapis.com/auth/userinfo.profile",
+].join(" ");
 
 export interface TokenResponse {
   access_token: string;
@@ -37,7 +41,7 @@ export function requestAccessToken(clientId: string): Promise<string> {
     }
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
-      scope: YOUTUBE_READONLY_SCOPE,
+      scope: SCOPES,
       callback: (response) => {
         if (response.error || !response.access_token) {
           reject(new Error(response.error ?? "アクセストークンの取得に失敗しました"));
