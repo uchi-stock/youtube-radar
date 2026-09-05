@@ -1,3 +1,10 @@
+## [1.2.5](https://github.com/uchi-stock/youtube-radar/compare/v1.2.4...v1.2.5) (2026-09-05)
+
+
+### Bug Fixes
+
+* **pipeline:** 1回の実行あたりのTranscript処理件数を制限する ([#32](https://github.com/uchi-stock/youtube-radar/issues/32)) ([fa00c53](https://github.com/uchi-stock/youtube-radar/commit/fa00c53be1c07bd152bc94b8137166a84f0d92d7))
+
 ## [1.2.4](https://github.com/uchi-stock/youtube-radar/compare/v1.2.3...v1.2.4) (2026-09-05)
 
 
