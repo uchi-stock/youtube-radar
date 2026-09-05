@@ -7,9 +7,9 @@
 ## 構成
 
 - `backend/`: パイプライン本体（Node.js）。フロントエンドは持たない
-- 実行基盤: AWS Lambda（EventBridge Schedule）を新着検知とTranscript取得で2関数に分離している。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions自体の共有IPからはYouTubeの字幕取得エンドポイントがレート制限されるため、実行環境をAWS Lambdaへ移した（Issue #16・#19）が、AWS Lambda環境でも同様のアクセス制限（HTTP 429）が発生することが判明したため、429を正常系として扱うアーキテクチャに変更した（Issue #24）
+- 実行基盤: AWS Lambda（EventBridge Schedule）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions・AWS LambdaいずれのデータセンターIPからも、YouTubeの非公式字幕取得エンドポイントがHTTP 429で恒常的にブロックされることが判明した（Issue #16・#19・#24）ため、字幕取得自体は自宅Raspberry Pi（家庭用IP）に委ねる構成にした（Issue #35）
   - `discover`関数（`src/lambda.js`、6時間ごと）: YouTube Data APIで新着動画を検知し、DynamoDBに`PENDING`として登録するのみ
-  - `transcriptWorker`関数（`src/transcriptWorkerLambda.js`、30分ごと）: DynamoDBの`PENDING`/`RETRY_WAIT`動画を少数ずつ字幕取得〜要約〜LINE通知まで処理する。HTTP 429発生時は`RETRY_WAIT`として次回実行に持ち越す
+  - `transcriptApi`関数（`src/transcriptApiLambda.js`、API Gateway HTTP API）: 自宅Raspberry Piからの`GET /pending`（未処理動画一覧取得）・`POST /transcripts`（字幕取得結果の送信）を受け付け、字幕を受け取ったら要約〜LINE通知〜DynamoDBの状態更新まで行う。HTTP 429等で取得できなかった場合は`RETRY_WAIT`として次回のRaspberry Piからのポーリングに持ち越す
 - 監視対象チャンネル: 設定ファイルでの手動登録は行わず、YouTube上でチャンネル登録（サブスクライブ）しているチャンネル一覧をOAuth経由で自動取得する（`backend/src/lib/subscriptions.js`）
 - 処理済み動画IDの記録: DynamoDB（`backend/src/lib/dynamoStore.js`。テーブルは`serverless.yml`でコード管理）
 - LINE Messaging API（`LINE_CHANNEL_ACCESS_TOKEN`・`LINE_USER_ID`）は任意設定。未設定の間はLINE通知のみスキップされる（実行結果はCloudWatch Logsで確認する）
@@ -32,6 +32,7 @@
 - `GEMINI_API_KEY`: Gemini APIキー（必須）
 - `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` / `GOOGLE_OAUTH_REFRESH_TOKEN`: チャンネル登録一覧取得用のOAuth認証情報（必須。取得手順は下記）
 - `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`: LINE Messaging APIの通知先（任意）
+- `PI_API_KEY`: 自宅Raspberry PiからのAPI呼び出しを認証する共有シークレット（必須。任意の文字列を生成しGitHub Secretsへ登録した上で、Raspberry Pi側にも同じ値を設定する）
 
 ### 3. デプロイ
 
@@ -39,8 +40,8 @@ mainブランチへのpush（PRマージ）のたびに`.github/workflows/cd.yml
 
 ### 4. 実行結果の確認（スマートフォンのブラウザで完結）
 
-1. https://console.aws.amazon.com/lambda/home を開き、`youtube-radar-pipeline-dev-discover`（新着検知）または`youtube-radar-pipeline-dev-transcriptWorker`（Transcript取得、リージョン: `ap-northeast-1`）関数を開く
-2. 「テスト」タブから空のテストイベントで手動実行するか、自動実行（`discover`は6時間ごと、`transcriptWorker`は30分ごと）を待つ
+1. https://console.aws.amazon.com/lambda/home を開き、`youtube-radar-pipeline-dev-discover`（新着検知）または`youtube-radar-pipeline-dev-transcriptApi`（Raspberry Pi連携API、リージョン: `ap-northeast-1`）関数を開く
+2. 「テスト」タブから空のテストイベントで手動実行するか、`discover`の自動実行（6時間ごと）・Raspberry Piからの呼び出しを待つ
 3. 「モニタリング」タブ→「CloudWatch Logsを表示」でログを確認する
 
 ### OAuth認証情報の取得手順（スマートフォンのブラウザで完結）

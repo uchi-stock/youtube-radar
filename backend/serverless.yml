@@ -19,6 +19,8 @@ provider:
     TRANSCRIPT_RETRY_BASE_DELAY_MS: ${env:TRANSCRIPT_RETRY_BASE_DELAY_MS, '500'}
     # 1回の実行でTranscript取得を試みる動画数の上限。429の発生状況を見ながら調整する。
     TRANSCRIPT_BATCH_SIZE: ${env:TRANSCRIPT_BATCH_SIZE, '5'}
+    # 自宅Raspberry PiからのAPI呼び出しを認証する共有シークレット。
+    PI_API_KEY: ${env:PI_API_KEY}
   iam:
     role:
       statements:
@@ -36,14 +38,19 @@ functions:
     memorySize: 256
     events:
       - schedule: rate(6 hours)
-  transcriptWorker:
-    handler: src/transcriptWorkerLambda.handler
-    timeout: 300
-    memorySize: 512
+  # 字幕取得自体はAWSからは行わない（HTTP 429で恒常的にブロックされるため）。
+  # 自宅Raspberry Piが本APIを介して未処理動画一覧を取得し、字幕取得結果を送信する。
+  transcriptApi:
+    handler: src/transcriptApiLambda.handler
+    timeout: 30
+    memorySize: 256
     events:
-      # 429（アクセス制限）の発生状況を見ながら間隔を調整する。新着検知（6時間ごと）より
-      # 短い間隔でPENDING/RETRY_WAIT動画を少しずつ処理する。
-      - schedule: rate(30 minutes)
+      - httpApi:
+          method: GET
+          path: /pending
+      - httpApi:
+          method: POST
+          path: /transcripts
 
 resources:
   Resources:

@@ -59,7 +59,7 @@ AI処理が完了した動画をLINE Messaging APIで通知する。通知イメ
 
 ## 5. アーキテクチャ（MVP）
 
-当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。しかしAWS Lambda環境でも同様のHTTP 429が発生することが判明したため、429を「アクセス制限による一時保留」として扱う設計に変更し、新着検知とTranscript取得を別Lambda関数に分離した。動画単位の処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`RETRY_WAIT`/`FAILED`）はDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
+当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。しかしAWS Lambda環境でも同様のHTTP 429が恒常的に発生することが判明した（データセンターIP自体が制限対象と考えられる）ため、字幕取得自体をAWSから行うことを諦め、自宅Raspberry Pi（家庭用IP）に委ねる構成に変更した。動画単位の処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`RETRY_WAIT`/`FAILED`）はDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
 
 ```
 EventBridge Schedule（6時間ごと）
@@ -70,19 +70,21 @@ YouTube Data API（新着動画確認）
      ↓
 DynamoDBにPENDINGとして登録
 
-EventBridge Schedule（30分ごと）
+自宅Raspberry Pi（cron等で定期実行）
      ↓
-transcriptWorker Lambda
+GET /pending （transcriptApi Lambda、API Gateway）
      ↓
-DynamoDBのPENDING/RETRY_WAIT動画を少数取得
+DynamoDBのPENDING/RETRY_WAIT動画一覧を取得
      ↓
-文字起こし取得（429時はRETRY_WAITとして次回に持ち越す）
+Raspberry Pi自身がYouTubeへ直接アクセスして文字起こし取得
+     ↓
+POST /transcripts （transcriptApi Lambda、API Gateway）
      ↓
 LLM API（要約・重要度・視聴推奨度）
      ↓
 LINE Messaging API（通知）
      ↓
-DynamoDBの状態をCOMPLETED等へ更新
+DynamoDBの状態をCOMPLETED等へ更新（429等で取得失敗した場合はRETRY_WAITとして次回のRaspberry Piポーリングに持ち越す）
 ```
 
 ## 6. エラー処理

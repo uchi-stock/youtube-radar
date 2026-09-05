@@ -10,40 +10,65 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ap-northeast-1
+      PI_API_KEY: ${{ secrets.PI_API_KEY }}
     steps:
-      - name: Invoke discover and transcriptWorker, capture full CloudWatch Logs
+      - name: Invoke discover, capture full CloudWatch Logs
         run: |
-          invoke_and_report() {
-            local function_name="$1"
-            local response_file="$2"
+          start_epoch_ms=$(($(date +%s%N) / 1000000))
 
-            local start_epoch_ms
-            start_epoch_ms=$(($(date +%s%N) / 1000000))
+          aws lambda invoke \
+            --function-name youtube-radar-pipeline-dev-discover \
+            --cli-read-timeout 300 \
+            discover-response.json > discover-response.json.invoke-result.json
 
-            aws lambda invoke \
-              --function-name "$function_name" \
-              --cli-read-timeout 300 \
-              "$response_file" > "${response_file}.invoke-result.json"
+          # ログがCloudWatchへ反映されるまでの遅延を吸収する
+          sleep 15
 
-            # ログがCloudWatchへ反映されるまでの遅延を吸収する
-            sleep 15
+          {
+            echo '## discover invoke result'
+            echo '### Response'
+            echo '```json'
+            cat discover-response.json
+            echo '```'
+            echo '### Logs (CloudWatch, full)'
+            echo '```'
+            aws logs filter-log-events \
+              --log-group-name /aws/lambda/youtube-radar-pipeline-dev-discover \
+              --start-time "$start_epoch_ms" \
+              --query 'events[].message' \
+              --output text
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
-            {
-              echo "## ${function_name} invoke result"
-              echo '### Response'
-              echo '```json'
-              cat "$response_file"
-              echo '```'
-              echo '### Logs (CloudWatch, full)'
-              echo '```'
-              aws logs filter-log-events \
-                --log-group-name "/aws/lambda/${function_name}" \
-                --start-time "$start_epoch_ms" \
-                --query 'events[].message' \
-                --output text
-              echo '```'
-            } | tee -a "$GITHUB_STEP_SUMMARY"
-          }
+      - name: Call transcriptApi GET /pending (Raspberry Pi向けAPIの疎通確認)
+        run: |
+          api_url=$(aws cloudformation describe-stacks \
+            --stack-name youtube-radar-pipeline-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='HttpApiUrl'].OutputValue" \
+            --output text)
 
-          invoke_and_report youtube-radar-pipeline-dev-discover discover-response.json
-          invoke_and_report youtube-radar-pipeline-dev-transcriptWorker transcript-worker-response.json
+          start_epoch_ms=$(($(date +%s%N) / 1000000))
+
+          # レスポンスボディとHTTPステータスのみ記録する（APIキーはヘッダーとして送るのみでログへ出さない）
+          http_status=$(curl -sS -o pending-response.json -w '%{http_code}' \
+            -H "x-api-key: ${PI_API_KEY}" \
+            "${api_url}/pending")
+
+          sleep 15
+
+          {
+            echo '## transcriptApi GET /pending invoke result'
+            echo "### HTTP status: ${http_status}"
+            echo '### Response'
+            echo '```json'
+            cat pending-response.json
+            echo '```'
+            echo '### Logs (CloudWatch, full)'
+            echo '```'
+            aws logs filter-log-events \
+              --log-group-name /aws/lambda/youtube-radar-pipeline-dev-transcriptApi \
+              --start-time "$start_epoch_ms" \
+              --query 'events[].message' \
+              --output text
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
