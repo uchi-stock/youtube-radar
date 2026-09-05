@@ -1,3 +1,10 @@
+# [1.10.0](https://github.com/uchi-stock/youtube-radar/compare/v1.9.1...v1.10.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** アプリバージョン表示・ユーザーアイコン・共通CSSを追加 ([#53](https://github.com/uchi-stock/youtube-radar/issues/53)) ([676364b](https://github.com/uchi-stock/youtube-radar/commit/676364bfb51d4f7f8a8587e8b5a5f456657e1f96))
+
 ## [1.9.1](https://github.com/uchi-stock/youtube-radar/compare/v1.9.0...v1.9.1) (2026-09-05)
 
 
