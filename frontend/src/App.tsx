@@ -222,19 +222,17 @@ export default function App() {
                   <li key={video.videoId} className="list-group-item">
                     <button
                       type="button"
-                      className="btn btn-link p-0 text-decoration-none text-reset d-flex align-items-center gap-2 w-100 text-start"
+                      className="btn btn-link p-0 text-decoration-none text-reset d-flex flex-column align-items-start w-100 text-start"
                       onClick={() => handleToggleVideo(video.videoId)}
                     >
                       {video.thumbnailUrl && (
-                        <img src={video.thumbnailUrl} alt="" width={64} height={48} />
+                        <img src={video.thumbnailUrl} alt="" className="w-100 rounded" />
                       )}
-                      <div>
-                        <div>{video.title}</div>
-                        <small className="text-muted">
-                          {formatViewCount(video.viewCount)}
-                          {video.duration && `・${video.duration}`}
-                        </small>
-                      </div>
+                      <small className="mt-1">{video.title}</small>
+                      <small className="text-muted">
+                        {formatViewCount(video.viewCount)}
+                        {video.duration && `・${video.duration}`}
+                      </small>
                     </button>
 
                     {expandedVideoId === video.videoId && (
