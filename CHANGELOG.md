@@ -1,3 +1,10 @@
+## [1.7.1](https://github.com/uchi-stock/youtube-radar/compare/v1.7.0...v1.7.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **pi:** run.shの自動更新をorigin/mainに固定する ([#43](https://github.com/uchi-stock/youtube-radar/issues/43)) ([f32df35](https://github.com/uchi-stock/youtube-radar/commit/f32df351bd0bddce5efeaa9ae4a2ed85ee6365e9))
+
 # [1.7.0](https://github.com/uchi-stock/youtube-radar/compare/v1.6.1...v1.7.0) (2026-09-05)
 
 
