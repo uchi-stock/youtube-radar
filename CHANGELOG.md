@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/uchi-stock/youtube-radar/compare/v1.2.5...v1.3.0) (2026-09-05)
+
+
+### Features
+
+* **dynamoStore:** 動画単位のTranscript処理状態を管理する ([#33](https://github.com/uchi-stock/youtube-radar/issues/33)) ([c9d08cb](https://github.com/uchi-stock/youtube-radar/commit/c9d08cb645755408022f88a883d73a413628d032))
+
 ## [1.2.5](https://github.com/uchi-stock/youtube-radar/compare/v1.2.4...v1.2.5) (2026-09-05)
 
 
