@@ -5,6 +5,7 @@ import App from "./App";
 import * as channelVideos from "./channelVideos";
 import * as googleAuth from "./googleAuth";
 import * as googleUserInfo from "./googleUserInfo";
+import { loadLoginPreference, saveLoginPreference } from "./loginPreference";
 import * as videoDetail from "./videoDetail";
 import * as youtubeApi from "./youtubeApi";
 
@@ -37,6 +38,7 @@ function mockUserInfo() {
 describe("App", () => {
   afterEach(() => {
     vi.resetAllMocks();
+    localStorage.clear();
   });
 
   it("タイトル横にアプリバージョンを表示する", () => {
@@ -117,6 +119,49 @@ describe("App", () => {
     expect(googleAuth.revokeAccessToken).toHaveBeenCalledWith("token-123");
     expect(screen.queryByText("チャンネルA")).not.toBeInTheDocument();
     expect(screen.queryByAltText("テストユーザー")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Googleでログイン" })).toBeInTheDocument();
+    expect(loadLoginPreference()).toBeNull();
+  });
+
+  it("再訪問時、以前ログインしていたユーザーには「おかえりなさい」表示とログイン再開ボタンを出す", async () => {
+    saveLoginPreference({ name: "テストユーザー", picture: "https://example.com/icon.jpg" });
+
+    render(<App />);
+
+    expect(screen.getByText("おかえりなさい、テストユーザーさん", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "ログインを再開" })).toBeInTheDocument();
+    expect(screen.queryByText(/巡回し/)).not.toBeInTheDocument();
+  });
+
+  it("ログアウト後に別のGoogleアカウントでログインすると、そのアカウントの情報に切り替わる", async () => {
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValueOnce("token-a").mockResolvedValueOnce("token-b");
+    vi.mocked(googleAuth.revokeAccessToken).mockResolvedValue(undefined);
+    vi.mocked(youtubeApi.fetchSubscribedChannels)
+      .mockResolvedValueOnce([{ channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" }])
+      .mockResolvedValueOnce([{ channelId: "UC2", title: "チャンネルB", thumbnailUrl: "" }]);
+    vi.mocked(googleUserInfo.fetchGoogleUserInfo)
+      .mockResolvedValueOnce({ name: "ユーザーA", picture: "https://example.com/a.jpg" })
+      .mockResolvedValueOnce({ name: "ユーザーB", picture: "https://example.com/b.jpg" });
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+    await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
+    expect(screen.getByAltText("ユーザーA")).toHaveAttribute("src", "https://example.com/a.jpg");
+
+    await user.click(screen.getByAltText("ユーザーA"));
+    await user.click(screen.getByRole("button", { name: "ログアウト" }));
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+
+    await waitFor(() => expect(screen.getByText("チャンネルB")).toBeInTheDocument());
+    expect(screen.queryByText("チャンネルA")).not.toBeInTheDocument();
+    expect(screen.getByAltText("ユーザーB")).toHaveAttribute("src", "https://example.com/b.jpg");
+  });
+
+  it("初回訪問時はアプリ概要とログインボタンのみ表示する", () => {
+    render(<App />);
+
+    expect(screen.queryByText(/おかえりなさい/)).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Googleでログイン" })).toBeInTheDocument();
   });
 
