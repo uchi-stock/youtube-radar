@@ -1,3 +1,10 @@
+# [1.14.0](https://github.com/uchi-stock/youtube-radar/compare/v1.13.0...v1.14.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** 動画一覧のサムネイルを大きくしタイトルを下に小さく表示する ([#65](https://github.com/uchi-stock/youtube-radar/issues/65)) ([4c1e2d7](https://github.com/uchi-stock/youtube-radar/commit/4c1e2d7eabe2e62fe82dd6f3937264bc5573ca64))
+
 # [1.13.0](https://github.com/uchi-stock/youtube-radar/compare/v1.12.0...v1.13.0) (2026-09-05)
 
 
