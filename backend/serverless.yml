@@ -34,7 +34,9 @@ provider:
 functions:
   discover:
     handler: src/lambda.handler
-    timeout: 60
+    # 126チャンネル分のYouTube Data API呼び出し・DynamoDB参照を逐次実行するため、
+    # 60秒では不足しタイムアウトすることが実機で確認された（Issue #38）。
+    timeout: 300
     memorySize: 256
     events:
       - schedule: rate(6 hours)
