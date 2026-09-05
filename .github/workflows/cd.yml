@@ -38,7 +38,11 @@ jobs:
     needs: cd
     runs-on: ubuntu-latest
     steps:
+      # frontendがdev-standardsのshared/ui配下をsymlink経由で参照するため、
+      # サブモジュールをチェックアウトしないとビルド時にsymlinkが解決できない
       - uses: actions/checkout@v4
+        with:
+          submodules: true
       - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.7.3
         with:
           working-directory: frontend
