@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/uchi-stock/youtube-radar/compare/v1.2.1...v1.2.2) (2026-09-05)
+
+
+### Bug Fixes
+
+* Lambda呼び出し確認で全量のCloudWatch Logsを取得する ([#23](https://github.com/uchi-stock/youtube-radar/issues/23)) ([9b689bf](https://github.com/uchi-stock/youtube-radar/commit/9b689bf78aa5cd12ae5c34f2d77b73b34ebff496))
+
 ## [1.2.1](https://github.com/uchi-stock/youtube-radar/compare/v1.2.0...v1.2.1) (2026-09-04)
 
 
