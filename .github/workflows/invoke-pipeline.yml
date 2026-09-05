@@ -11,30 +11,39 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       AWS_DEFAULT_REGION: ap-northeast-1
     steps:
-      - name: Invoke Lambda and capture full CloudWatch Logs
+      - name: Invoke discover and transcriptWorker, capture full CloudWatch Logs
         run: |
-          START_EPOCH_MS=$(($(date +%s%N) / 1000000))
+          invoke_and_report() {
+            local function_name="$1"
+            local response_file="$2"
 
-          aws lambda invoke \
-            --function-name youtube-radar-pipeline-dev-pipeline \
-            --cli-read-timeout 300 \
-            response.json > invoke-result.json
+            local start_epoch_ms
+            start_epoch_ms=$(($(date +%s%N) / 1000000))
 
-          # ログがCloudWatchへ反映されるまでの遅延を吸収する
-          sleep 15
+            aws lambda invoke \
+              --function-name "$function_name" \
+              --cli-read-timeout 300 \
+              "$response_file" > "${response_file}.invoke-result.json"
 
-          {
-            echo '## Lambda invoke result'
-            echo '### Response'
-            echo '```json'
-            cat response.json
-            echo '```'
-            echo '### Logs (CloudWatch, full)'
-            echo '```'
-            aws logs filter-log-events \
-              --log-group-name /aws/lambda/youtube-radar-pipeline-dev-pipeline \
-              --start-time "$START_EPOCH_MS" \
-              --query 'events[].message' \
-              --output text
-            echo '```'
-          } | tee -a "$GITHUB_STEP_SUMMARY"
+            # ログがCloudWatchへ反映されるまでの遅延を吸収する
+            sleep 15
+
+            {
+              echo "## ${function_name} invoke result"
+              echo '### Response'
+              echo '```json'
+              cat "$response_file"
+              echo '```'
+              echo '### Logs (CloudWatch, full)'
+              echo '```'
+              aws logs filter-log-events \
+                --log-group-name "/aws/lambda/${function_name}" \
+                --start-time "$start_epoch_ms" \
+                --query 'events[].message' \
+                --output text
+              echo '```'
+            } | tee -a "$GITHUB_STEP_SUMMARY"
+          }
+
+          invoke_and_report youtube-radar-pipeline-dev-discover discover-response.json
+          invoke_and_report youtube-radar-pipeline-dev-transcriptWorker transcript-worker-response.json

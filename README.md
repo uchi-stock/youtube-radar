@@ -7,7 +7,9 @@
 ## 構成
 
 - `backend/`: パイプライン本体（Node.js）。フロントエンドは持たない
-- 実行基盤: AWS Lambda（EventBridge Scheduleで6時間ごとに自動実行）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions自体の共有IPからはYouTubeの字幕取得エンドポイントがレート制限されるため、実行環境をAWS Lambdaへ移した（Issue #16・#19）
+- 実行基盤: AWS Lambda（EventBridge Schedule）を新着検知とTranscript取得で2関数に分離している。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions自体の共有IPからはYouTubeの字幕取得エンドポイントがレート制限されるため、実行環境をAWS Lambdaへ移した（Issue #16・#19）が、AWS Lambda環境でも同様のアクセス制限（HTTP 429）が発生することが判明したため、429を正常系として扱うアーキテクチャに変更した（Issue #24）
+  - `discover`関数（`src/lambda.js`、6時間ごと）: YouTube Data APIで新着動画を検知し、DynamoDBに`PENDING`として登録するのみ
+  - `transcriptWorker`関数（`src/transcriptWorkerLambda.js`、30分ごと）: DynamoDBの`PENDING`/`RETRY_WAIT`動画を少数ずつ字幕取得〜要約〜LINE通知まで処理する。HTTP 429発生時は`RETRY_WAIT`として次回実行に持ち越す
 - 監視対象チャンネル: 設定ファイルでの手動登録は行わず、YouTube上でチャンネル登録（サブスクライブ）しているチャンネル一覧をOAuth経由で自動取得する（`backend/src/lib/subscriptions.js`）
 - 処理済み動画IDの記録: DynamoDB（`backend/src/lib/dynamoStore.js`。テーブルは`serverless.yml`でコード管理）
 - LINE Messaging API（`LINE_CHANNEL_ACCESS_TOKEN`・`LINE_USER_ID`）は任意設定。未設定の間はLINE通知のみスキップされる（実行結果はCloudWatch Logsで確認する）
@@ -37,8 +39,8 @@ mainブランチへのpush（PRマージ）のたびに`.github/workflows/cd.yml
 
 ### 4. 実行結果の確認（スマートフォンのブラウザで完結）
 
-1. https://console.aws.amazon.com/lambda/home を開き、`youtube-radar-pipeline-dev-pipeline`（リージョン: `ap-northeast-1`）関数を開く
-2. 「テスト」タブから空のテストイベントで手動実行するか、6時間ごとの自動実行を待つ
+1. https://console.aws.amazon.com/lambda/home を開き、`youtube-radar-pipeline-dev-discover`（新着検知）または`youtube-radar-pipeline-dev-transcriptWorker`（Transcript取得、リージョン: `ap-northeast-1`）関数を開く
+2. 「テスト」タブから空のテストイベントで手動実行するか、自動実行（`discover`は6時間ごと、`transcriptWorker`は30分ごと）を待つ
 3. 「モニタリング」タブ→「CloudWatch Logsを表示」でログを確認する
 
 ### OAuth認証情報の取得手順（スマートフォンのブラウザで完結）

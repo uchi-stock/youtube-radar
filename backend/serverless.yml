@@ -30,12 +30,20 @@ provider:
           Resource: !GetAtt ProcessedVideosTable.Arn
 
 functions:
-  pipeline:
+  discover:
     handler: src/lambda.handler
+    timeout: 60
+    memorySize: 256
+    events:
+      - schedule: rate(6 hours)
+  transcriptWorker:
+    handler: src/transcriptWorkerLambda.handler
     timeout: 300
     memorySize: 512
     events:
-      - schedule: rate(6 hours)
+      # 429（アクセス制限）の発生状況を見ながら間隔を調整する。新着検知（6時間ごと）より
+      # 短い間隔でPENDING/RETRY_WAIT動画を少しずつ処理する。
+      - schedule: rate(30 minutes)
 
 resources:
   Resources:
