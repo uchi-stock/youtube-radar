@@ -14,6 +14,17 @@ export async function getPendingVideos({ store, maxVideosPerRun = Infinity }) {
   return [...pending, ...retryWait].slice(0, maxVideosPerRun);
 }
 
+// frontend（ブラウザ）から動画タップ時に呼ばれる、処理状態・要約の読み取り専用参照。
+// 認証不要（読み取り専用の非秘匿データのため）。未登録の動画にはnullを返す。
+export async function getVideoDetail({ store, videoId }) {
+  const item = await store.getStatus(videoId);
+  if (!item) {
+    return null;
+  }
+  const { status, channelName, title, publishedAt, summary } = item;
+  return { videoId, status, channelName, title, publishedAt, summary: summary ?? null };
+}
+
 // Raspberry Piから送られた字幕取得結果を受け取り、要約・LINE通知・状態更新まで行う。
 // status: "NOT_FOUND"（字幕が存在しない）が明示された場合、またはtranscriptが無い場合は
 // TRANSCRIPT_NOT_FOUNDとして記録する。
@@ -45,7 +56,7 @@ export async function submitTranscriptResult({ store, env, deps = {}, logger = c
       logger.warn?.(`[${videoId}] LINE_CHANNEL_ACCESS_TOKEN/LINE_USER_ID未設定のためLINE通知をスキップしました`);
     }
 
-    await store.setStatus(videoId, VIDEO_STATUS.COMPLETED, { channelName, title, publishedAt });
+    await store.setStatus(videoId, VIDEO_STATUS.COMPLETED, { channelName, title, publishedAt, summary });
     return { videoId, status: "reported", lineNotified: lineConfigured };
   } catch (error) {
     logger.error(`[${videoId}] 処理に失敗しました: ${error.message}`);

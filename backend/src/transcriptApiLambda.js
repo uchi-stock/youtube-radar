@@ -1,5 +1,5 @@
 import { createStore } from "./lib/dynamoStore.js";
-import { getPendingVideos, submitTranscriptResult } from "./transcriptApi.js";
+import { getPendingVideos, getVideoDetail, submitTranscriptResult } from "./transcriptApi.js";
 
 function jsonResponse(statusCode, body) {
   return { statusCode, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
@@ -13,14 +13,30 @@ function isAuthorized(event) {
   return Boolean(process.env.PI_API_KEY) && apiKey === process.env.PI_API_KEY;
 }
 
+// GET /videos/{videoId}は、frontendがブラウザから直接呼ぶ読み取り専用の公開エンドポイント
+// （処理状態・要約のみを返す非秘匿データのため）。他のパスはRaspberry Pi専用のため認証が必須。
+function isPublicPath(method, path) {
+  return method === "GET" && path.startsWith("/videos/");
+}
+
 export async function handler(event) {
-  if (!isAuthorized(event)) {
+  const method = event.requestContext?.http?.method;
+  const path = event.rawPath;
+
+  if (!isPublicPath(method, path) && !isAuthorized(event)) {
     return jsonResponse(401, { error: "unauthorized" });
   }
 
   const store = createStore(process.env.PROCESSED_VIDEOS_TABLE);
-  const method = event.requestContext?.http?.method;
-  const path = event.rawPath;
+
+  if (method === "GET" && path.startsWith("/videos/")) {
+    const videoId = event.pathParameters?.videoId;
+    const detail = await getVideoDetail({ store, videoId });
+    if (!detail) {
+      return jsonResponse(404, { error: "not_registered" });
+    }
+    return jsonResponse(200, detail);
+  }
 
   if (method === "GET" && path === "/pending") {
     const videos = await getPendingVideos({

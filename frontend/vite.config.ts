@@ -16,6 +16,7 @@ export default defineConfig({
     setupFiles: ['./src/setupTests.ts'],
     env: {
       VITE_GOOGLE_CLIENT_ID: 'test-client-id',
+      VITE_TRANSCRIPT_API_BASE_URL: 'https://api.example.com',
     },
   },
 })

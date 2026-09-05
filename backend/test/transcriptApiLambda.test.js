@@ -7,10 +7,13 @@ vi.mock("../src/lib/dynamoStore.js", async () => {
 vi.mock("../src/transcriptApi.js", () => ({
   getPendingVideos: vi.fn(async () => [{ videoId: "v1" }]),
   submitTranscriptResult: vi.fn(async ({ videoId }) => ({ videoId, status: "reported", lineNotified: true })),
+  getVideoDetail: vi.fn(async ({ videoId }) =>
+    videoId === "v1" ? { videoId: "v1", status: "COMPLETED", summary: { summary: ["a"] } } : null,
+  ),
 }));
 
 const { createStore } = await import("../src/lib/dynamoStore.js");
-const { getPendingVideos, submitTranscriptResult } = await import("../src/transcriptApi.js");
+const { getPendingVideos, submitTranscriptResult, getVideoDetail } = await import("../src/transcriptApi.js");
 const { handler } = await import("../src/transcriptApiLambda.js");
 
 describe("transcriptApiLambda", () => {
@@ -81,6 +84,30 @@ describe("transcriptApiLambda", () => {
       headers: { "x-api-key": "secret" },
       requestContext: { http: { method: "GET" } },
       rawPath: "/unknown",
+    });
+
+    expect(res.statusCode).toBe(404);
+  });
+
+  it("GET /videos/{videoId}はx-api-keyが無くても呼べる（公開エンドポイント）", async () => {
+    const res = await handler({
+      headers: {},
+      requestContext: { http: { method: "GET" } },
+      rawPath: "/videos/v1",
+      pathParameters: { videoId: "v1" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({ videoId: "v1", status: "COMPLETED", summary: { summary: ["a"] } });
+    expect(getVideoDetail).toHaveBeenCalledWith(expect.objectContaining({ videoId: "v1" }));
+  });
+
+  it("GET /videos/{videoId}で未登録の場合は404を返す", async () => {
+    const res = await handler({
+      headers: {},
+      requestContext: { http: { method: "GET" } },
+      rawPath: "/videos/unknown",
+      pathParameters: { videoId: "unknown" },
     });
 
     expect(res.statusCode).toBe(404);

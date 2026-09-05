@@ -5,6 +5,9 @@ provider:
   name: aws
   runtime: nodejs22.x
   region: ap-northeast-1
+  # GET /videos/{videoId}をfrontend（CloudFront配信のブラウザアプリ）から直接呼ぶためCORSを有効にする。
+  httpApi:
+    cors: true
   environment:
     PROCESSED_VIDEOS_TABLE: ${self:service}-${sls:stage}-processed-videos
     YOUTUBE_API_KEY: ${env:YOUTUBE_API_KEY}
@@ -53,6 +56,10 @@ functions:
       - httpApi:
           method: POST
           path: /transcripts
+      # frontendがブラウザから直接呼ぶ読み取り専用の公開エンドポイント（cors設定はprovider.httpApi参照）。
+      - httpApi:
+          method: GET
+          path: /videos/{videoId}
 
 resources:
   Resources:
