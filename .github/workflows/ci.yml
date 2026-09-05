@@ -11,5 +11,8 @@ jobs:
     with:
       packages: '[{"dir":"backend"},{"dir":"pi"},{"dir":"frontend","build":true,"node_version":22}]'
       node_version: 20
+      # frontendがdev-standardsのshared/ui配下をsymlink経由で参照するため、
+      # package-testジョブでもdev-standardsサブモジュールをチェックアウトする必要がある
+      enable_standards_check: true
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
