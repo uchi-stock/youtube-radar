@@ -1,3 +1,10 @@
+## [1.15.1](https://github.com/uchi-stock/youtube-radar/compare/v1.15.0...v1.15.1) (2026-09-05)
+
+
+### Bug Fixes
+
+* **frontend:** ユーザーアイコンのプルダウンメニューが画面右にはみ出す問題を修正する ([#73](https://github.com/uchi-stock/youtube-radar/issues/73)) ([9c862ba](https://github.com/uchi-stock/youtube-radar/commit/9c862ba8ad193bff92d74084458e68841124bf15))
+
 # [1.15.0](https://github.com/uchi-stock/youtube-radar/compare/v1.14.1...v1.15.0) (2026-09-05)
 
 
