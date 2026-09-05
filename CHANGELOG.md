@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/uchi-stock/youtube-radar/compare/v1.8.0...v1.9.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** S3+CloudFrontでフロントエンドをホスティングする ([#47](https://github.com/uchi-stock/youtube-radar/issues/47)) ([7ca4210](https://github.com/uchi-stock/youtube-radar/commit/7ca421068657aa4637eddfb41e2b269e93989466))
+
 # [1.8.0](https://github.com/uchi-stock/youtube-radar/compare/v1.7.1...v1.8.0) (2026-09-05)
 
 
