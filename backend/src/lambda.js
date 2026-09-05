@@ -20,6 +20,12 @@ export async function handler() {
     processedIds,
     markProcessed: (videoId) => store.markProcessed(videoId),
     env: process.env,
+    deps: {
+      retry: {
+        maxRetries: Number(process.env.TRANSCRIPT_RETRY_MAX ?? 2),
+        baseDelayMs: Number(process.env.TRANSCRIPT_RETRY_BASE_DELAY_MS ?? 500),
+      },
+    },
   });
 
   const failed = results.filter((r) => r.status === "failed");
