@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/uchi-stock/youtube-radar/compare/v1.7.1...v1.8.0) (2026-09-05)
+
+
+### Features
+
+* **frontend:** Googleログイン→登録チャンネル一覧表示のWebアプリを追加 ([#46](https://github.com/uchi-stock/youtube-radar/issues/46)) ([9d25813](https://github.com/uchi-stock/youtube-radar/commit/9d25813bf6b95829b0c1a500b1eec1fc927603a1))
+
 ## [1.7.1](https://github.com/uchi-stock/youtube-radar/compare/v1.7.0...v1.7.1) (2026-09-05)
 
 
