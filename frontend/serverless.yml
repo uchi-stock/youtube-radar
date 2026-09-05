@@ -1,0 +1,70 @@
+service: youtube-radar-frontend
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  region: ap-northeast-1
+
+resources:
+  Resources:
+    SiteBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: youtube-radar-frontend-${sls:stage}
+        PublicAccessBlockConfiguration:
+          BlockPublicAcls: true
+          BlockPublicPolicy: true
+          IgnorePublicAcls: true
+          RestrictPublicBuckets: true
+
+    SiteBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref SiteBucket
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: cloudfront.amazonaws.com
+              Action: s3:GetObject
+              Resource: !Sub "${SiteBucket.Arn}/*"
+              Condition:
+                StringEquals:
+                  AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${CloudFrontDistribution}"
+
+    OriginAccessControl:
+      Type: AWS::CloudFront::OriginAccessControl
+      Properties:
+        OriginAccessControlConfig:
+          Name: youtube-radar-frontend-oac-${sls:stage}
+          OriginAccessControlOriginType: s3
+          SigningBehavior: always
+          SigningProtocol: sigv4
+
+    CloudFrontDistribution:
+      Type: AWS::CloudFront::Distribution
+      Properties:
+        DistributionConfig:
+          Enabled: true
+          DefaultRootObject: index.html
+          Origins:
+            - Id: SiteBucketOrigin
+              DomainName: !GetAtt SiteBucket.RegionalDomainName
+              S3OriginConfig:
+                OriginAccessIdentity: ""
+              OriginAccessControlId: !GetAtt OriginAccessControl.Id
+          DefaultCacheBehavior:
+            TargetOriginId: SiteBucketOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            # Managed-CachingOptimizedポリシー（AWSマネージド、全アカウント共通の固定ID）
+            CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+            Compress: true
+
+  Outputs:
+    BucketName:
+      Value: !Ref SiteBucket
+    DistributionId:
+      Value: !Ref CloudFrontDistribution
+    CloudFrontDomain:
+      Value: !GetAtt CloudFrontDistribution.DomainName

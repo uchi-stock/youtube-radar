@@ -33,3 +33,40 @@ jobs:
           LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
           LINE_USER_ID: ${{ secrets.LINE_USER_ID }}
           PI_API_KEY: ${{ secrets.PI_API_KEY }}
+
+  deploy-frontend:
+    needs: cd
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.7.3
+        with:
+          working-directory: frontend
+          node-version: "22"
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Build
+        working-directory: frontend
+        run: npm run build
+        env:
+          # Client IDは秘密情報ではないため、既存のバックエンド用Secretをそのまま流用する
+          VITE_GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+      - name: Sync to S3 and invalidate CloudFront
+        working-directory: frontend
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-1
+        run: |
+          bucket_name=$(aws cloudformation describe-stacks \
+            --stack-name youtube-radar-frontend-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" \
+            --output text)
+          distribution_id=$(aws cloudformation describe-stacks \
+            --stack-name youtube-radar-frontend-dev \
+            --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+            --output text)
+
+          aws s3 sync dist/ "s3://${bucket_name}/" --delete --cache-control "no-cache" --exclude "assets/*"
+          aws s3 sync dist/assets/ "s3://${bucket_name}/assets/" --cache-control "public, max-age=31536000, immutable"
+          aws cloudfront create-invalidation --distribution-id "$distribution_id" --paths "/*"

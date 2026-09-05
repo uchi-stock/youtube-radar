@@ -8,8 +8,9 @@
 
 - `backend/`: パイプライン本体（Node.js）
 - `pi/`: 自宅Raspberry Pi上で実行する字幕取得スクリプト（依存パッケージ無し）。セットアップ手順は[`pi/README.md`](pi/README.md)を参照
-- `frontend/`: Googleアカウントでログインし、そのアカウントの登録チャンネル一覧を表示するWebアプリ（React 19 + Vite + TypeScript + Bootstrap 5.3）。バックエンドを介さず、ブラウザから直接Google Identity Services・YouTube Data APIを呼び出す表示専用アプリで、ログアウトすると一覧は消える（定期巡回への組み込みは対象外）。ホスティングは別途対応予定（Issue #45）
+- `frontend/`: Googleアカウントでログインし、そのアカウントの登録チャンネル一覧を表示するWebアプリ（React 19 + Vite + TypeScript + Bootstrap 5.3）。バックエンドを介さず、ブラウザから直接Google Identity Services・YouTube Data APIを呼び出す表示専用アプリで、ログアウトすると一覧は消える（定期巡回への組み込みは対象外）
   - ローカルでの動作確認: `cd frontend && npm ci && npm run dev`。Google Cloud Consoleで発行済みのOAuthクライアント（`GOOGLE_OAUTH_CLIENT_ID`）の「承認済みのJavaScript生成元」に`http://localhost:5173`を追加した上で、`frontend/.env.local`に`VITE_GOOGLE_CLIENT_ID=<クライアントID>`を設定する（Client IDは秘密情報ではない）
+  - ホスティング: S3 + CloudFront（`frontend/serverless.yml`、OSLS）。`.github/workflows/cd.yml`の`deploy-frontend` jobがビルド・S3同期・CloudFrontキャッシュ無効化まで行う。デプロイ後のURL確認手順は「4. 実行結果の確認」参照
 - 実行基盤: AWS Lambda（EventBridge Schedule）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions・AWS LambdaいずれのデータセンターIPからも、YouTubeの非公式字幕取得エンドポイントがHTTP 429で恒常的にブロックされることが判明した（Issue #16・#19・#24）ため、字幕取得自体は自宅Raspberry Pi（家庭用IP）に委ねる構成にした（Issue #35）
   - `discover`関数（`src/lambda.js`、6時間ごと）: YouTube Data APIで新着動画を検知し、DynamoDBに`PENDING`として登録するのみ
   - `transcriptApi`関数（`src/transcriptApiLambda.js`、API Gateway HTTP API）: 自宅Raspberry Piからの`GET /pending`（未処理動画一覧取得）・`POST /transcripts`（字幕取得結果の送信）を受け付け、字幕を受け取ったら要約〜LINE通知〜DynamoDBの状態更新まで行う。HTTP 429等で取得できなかった場合は`RETRY_WAIT`として次回のRaspberry Piからのポーリングに持ち越す
@@ -23,7 +24,7 @@
 
 1. https://console.aws.amazon.com/iam/home#/users を開き、「ユーザーを作成」
 2. ユーザー名は任意（例: `youtube-radar-deploy`）。「AWSマネジメントコンソールへのアクセスを提供する」はオフのままでよい（プログラムによるアクセスのみ使用）
-3. 権限は「ポリシーを直接アタッチする」から、最低限`AWSLambda_FullAccess`・`AmazonDynamoDBFullAccess`・`CloudWatchLogsFullAccess`・`AmazonEventBridgeFullAccess`・`IAMFullAccess`（Lambda実行ロール作成のため）・`AWSCloudFormationFullAccess`（OSLSがCloudFormation経由でリソースを作成するため）を付与する
+3. 権限は「ポリシーを直接アタッチする」から、最低限`AWSLambda_FullAccess`・`AmazonDynamoDBFullAccess`・`CloudWatchLogsFullAccess`・`AmazonEventBridgeFullAccess`・`IAMFullAccess`（Lambda実行ロール作成のため）・`AWSCloudFormationFullAccess`（OSLSがCloudFormation経由でリソースを作成するため）・`AmazonS3FullAccess`・`CloudFrontFullAccess`（フロントエンドのS3+CloudFrontホスティング用）を付与する
 4. 作成後、そのユーザーの詳細画面→「セキュリティ認証情報」タブ→「アクセスキーを作成」→ユースケースは「その他」を選択→表示された「アクセスキー」「シークレットアクセスキー」を控える（シークレットアクセスキーはこの画面でしか表示されない）
 
 ### 2. GitHub Secretsの登録
@@ -46,6 +47,12 @@ mainブランチへのpush（PRマージ）のたびに`.github/workflows/cd.yml
 1. https://console.aws.amazon.com/lambda/home を開き、`youtube-radar-pipeline-dev-discover`（新着検知）または`youtube-radar-pipeline-dev-transcriptApi`（Raspberry Pi連携API、リージョン: `ap-northeast-1`）関数を開く
 2. 「テスト」タブから空のテストイベントで手動実行するか、`discover`の自動実行（6時間ごと）・Raspberry Piからの呼び出しを待つ
 3. 「モニタリング」タブ→「CloudWatch Logsを表示」でログを確認する
+
+### 5. フロントエンド（登録チャンネル一覧表示）へのアクセスURL確認（スマートフォンのブラウザで完結）
+
+1. https://console.aws.amazon.com/cloudfront/v3/home を開き、対象のディストリビューション（コメント欄や作成日時等でCloudFormationスタック`youtube-radar-frontend-dev`のものと判別する）を開く
+2. 「ドメイン名」（`https://xxxxxxxxxxxxx.cloudfront.net`形式）がアクセスURL
+3. 初回アクセス時、OAuthクライアントの「承認済みのJavaScript生成元」（https://console.cloud.google.com/apis/credentials ）にこのCloudFrontドメインを追加していないと、Googleログインボタンがエラーになる点に注意
 
 ### OAuth認証情報の取得手順（スマートフォンのブラウザで完結）
 
