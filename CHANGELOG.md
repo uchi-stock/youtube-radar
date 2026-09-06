@@ -1,3 +1,10 @@
+## [1.22.1](https://github.com/uchi-stock/youtube-radar/compare/v1.22.0...v1.22.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **backend:** POST /channelsの認可をユーザー自身へのスコープ書き込みに変更する ([#101](https://github.com/uchi-stock/youtube-radar/issues/101)) ([51be58d](https://github.com/uchi-stock/youtube-radar/commit/51be58da0ec4558df5b7634b7c03d7087a557ca3))
+
 # [1.22.0](https://github.com/uchi-stock/youtube-radar/compare/v1.21.0...v1.22.0) (2026-09-06)
 
 
