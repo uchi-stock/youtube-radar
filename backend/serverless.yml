@@ -10,7 +10,10 @@ provider:
     cors: true
   environment:
     PROCESSED_VIDEOS_TABLE: ${self:service}-${sls:stage}-processed-videos
-    CHANNELS_TABLE: ${self:service}-${sls:stage}-channels
+    # v2: userEmail+channelIdの複合キーへ変更した際、CloudFormationは
+    # カスタム名前付きリソースの置き換え（キースキーマ変更）を旧名のままでは
+    # 許可しないため、テーブル名を変更した（Issue #100）。
+    CHANNELS_TABLE: ${self:service}-${sls:stage}-channels-v2
     YOUTUBE_API_KEY: ${env:YOUTUBE_API_KEY}
     GEMINI_API_KEY: ${env:GEMINI_API_KEY}
     GOOGLE_OAUTH_CLIENT_ID: ${env:GOOGLE_OAUTH_CLIENT_ID}
