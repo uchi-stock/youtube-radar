@@ -1,3 +1,10 @@
+## [1.22.2](https://github.com/uchi-stock/youtube-radar/compare/v1.22.1...v1.22.2) (2026-09-06)
+
+
+### Bug Fixes
+
+* **backend:** ChannelsTableのキースキーマ変更に伴うテーブル名衝突を解消する ([#102](https://github.com/uchi-stock/youtube-radar/issues/102)) ([62258e6](https://github.com/uchi-stock/youtube-radar/commit/62258e6d0bc7afac1b225f7fda54a18666dc0bde))
+
 ## [1.22.1](https://github.com/uchi-stock/youtube-radar/compare/v1.22.0...v1.22.1) (2026-09-06)
 
 
