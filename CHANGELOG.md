@@ -1,3 +1,10 @@
+# [1.24.0](https://github.com/uchi-stock/youtube-radar/compare/v1.23.0...v1.24.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** ログイン成功時にチャンネル一覧をbackendへ同期する ([#104](https://github.com/uchi-stock/youtube-radar/issues/104)) ([12fbda3](https://github.com/uchi-stock/youtube-radar/commit/12fbda394d713a8cdb854528207f9d82359edce7))
+
 # [1.23.0](https://github.com/uchi-stock/youtube-radar/compare/v1.22.2...v1.23.0) (2026-09-06)
 
 
