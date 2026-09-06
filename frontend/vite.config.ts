@@ -20,6 +20,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/setupTests.ts'],
+    // e2e/配下はPlaywright専用のスペックファイル（@playwright/testに依存）で
+    // vitestの対象ではないため、既定のincludeパターンから除外する
+    exclude: ['**/node_modules/**', 'e2e/**'],
     env: {
       VITE_GOOGLE_CLIENT_ID: 'test-client-id',
       VITE_TRANSCRIPT_API_BASE_URL: 'https://api.example.com',
