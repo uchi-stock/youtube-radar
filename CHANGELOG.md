@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/uchi-stock/youtube-radar/compare/v1.24.0...v1.25.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** ログイン〜登録チャンネル一覧表示のE2Eテストを追加する ([#92](https://github.com/uchi-stock/youtube-radar/issues/92)) ([d73947b](https://github.com/uchi-stock/youtube-radar/commit/d73947be44b0d661d078a33ace6928ec5748b003))
+
 # [1.24.0](https://github.com/uchi-stock/youtube-radar/compare/v1.23.0...v1.24.0) (2026-09-06)
 
 
