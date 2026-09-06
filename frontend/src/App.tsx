@@ -4,6 +4,7 @@ import { requestAccessToken, revokeAccessToken } from "./googleAuth";
 import { fetchGoogleUserInfo, type GoogleUserInfo } from "./googleUserInfo";
 import formatBuildTime from "./formatBuildTime"; // symlink
 import { clearLoginPreference, loadLoginPreference, saveLoginPreference } from "./loginPreference";
+import { linkifyText } from "./linkifyText";
 import ShareButton from "./ShareButton"; // symlink
 import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
@@ -284,6 +285,14 @@ export default function App() {
 
                     {expandedVideoId === video.videoId && (
                       <div className="mt-2 ps-2 border-start">
+                        <a
+                          href={`https://www.youtube.com/watch?v=${video.videoId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="d-inline-block small mb-2"
+                        >
+                          YouTubeで視聴
+                        </a>
                         <dl className="row small mb-2">
                           <dt className="col-4 col-sm-3">高評価数</dt>
                           <dd className="col-8 col-sm-9">{formatCount(video.likeCount)}</dd>
@@ -294,7 +303,7 @@ export default function App() {
                         </dl>
                         {video.description && (
                           <p className="small" style={{ whiteSpace: "pre-wrap" }}>
-                            {video.description}
+                            {linkifyText(video.description)}
                           </p>
                         )}
 

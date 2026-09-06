@@ -260,6 +260,37 @@ describe("App", () => {
     expect(screen.getByText("56")).toBeInTheDocument();
     expect(screen.getByText("7")).toBeInTheDocument();
     expect(screen.getByText("あり")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "YouTubeで視聴" })).toHaveAttribute(
+      "href",
+      "https://www.youtube.com/watch?v=v1",
+    );
+  });
+
+  it("概要欄中のURLをクリック可能なリンクとして表示する", async () => {
+    vi.mocked(videoDetail.fetchVideoDetail).mockResolvedValue(null);
+    vi.mocked(channelVideos.fetchChannelVideos).mockResolvedValue([
+      { ...MOCK_VIDEO, description: "配信者のXはこちら https://x.com/example です" },
+    ]);
+    const user = userEvent.setup();
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
+    vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
+      { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
+    ]);
+    mockUserInfo();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+    await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "チャンネルA" }));
+    await waitFor(() => expect(screen.getByText("動画1")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: /動画1/ }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("link", { name: "https://x.com/example" })).toHaveAttribute(
+        "href",
+        "https://x.com/example",
+      ),
+    );
   });
 
   it("処理済みの動画をタップすると要約を表示する", async () => {
