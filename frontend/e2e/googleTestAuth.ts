@@ -32,7 +32,10 @@ export async function getTestAccessToken(credentials: GoogleTestCredentials): Pr
     }),
   });
   if (!res.ok) {
-    throw new Error(`Google OAuthのアクセストークン取得に失敗しました: ${res.status}`);
+    // レスポンス本文（Googleのerror/error_descriptionフィールド）にはsecretsの値は
+    // 含まれないため、CI上での原因特定のためエラーメッセージに含める
+    const body = await res.text();
+    throw new Error(`Google OAuthのアクセストークン取得に失敗しました: ${res.status} ${body}`);
   }
   const data = await res.json();
   return data.access_token;
