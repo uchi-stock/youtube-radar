@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/uchi-stock/youtube-radar/compare/v1.26.0...v1.27.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** PWAでの更新反映のためService Worker・更新通知バナーを導入する ([#108](https://github.com/uchi-stock/youtube-radar/issues/108)) ([5a1f91b](https://github.com/uchi-stock/youtube-radar/commit/5a1f91bad35cd1bb81ca039305dfa944dab702d6))
+
 # [1.26.0](https://github.com/uchi-stock/youtube-radar/compare/v1.25.0...v1.26.0) (2026-09-06)
 
 
