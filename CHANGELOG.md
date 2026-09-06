@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/uchi-stock/youtube-radar/compare/v1.27.0...v1.28.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** 再訪問時にサイレント再ログインを試み、毎回のログイン操作を減らす ([#110](https://github.com/uchi-stock/youtube-radar/issues/110)) ([b95e3c1](https://github.com/uchi-stock/youtube-radar/commit/b95e3c18374ddc69cee0f86f1dcc0205291fefc7))
+
 # [1.27.0](https://github.com/uchi-stock/youtube-radar/compare/v1.26.0...v1.27.0) (2026-09-06)
 
 
