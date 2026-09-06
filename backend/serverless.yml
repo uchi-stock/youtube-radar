@@ -10,11 +10,16 @@ provider:
     cors: true
   environment:
     PROCESSED_VIDEOS_TABLE: ${self:service}-${sls:stage}-processed-videos
+    # v2: userEmail+channelIdの複合キーへ変更した際、CloudFormationは
+    # カスタム名前付きリソースの置き換え（キースキーマ変更）を旧名のままでは
+    # 許可しないため、テーブル名を変更した（Issue #100）。
+    CHANNELS_TABLE: ${self:service}-${sls:stage}-channels-v2
     YOUTUBE_API_KEY: ${env:YOUTUBE_API_KEY}
     GEMINI_API_KEY: ${env:GEMINI_API_KEY}
+    # channelsApi（POST /channels）がアクセストークンの検証にのみ使用する。
+    # discover Lambdaはchannelsストア経由でチャンネル一覧を読むため、
+    # OAuthクライアントシークレット・リフレッシュトークンは不要（Issue #96）。
     GOOGLE_OAUTH_CLIENT_ID: ${env:GOOGLE_OAUTH_CLIENT_ID}
-    GOOGLE_OAUTH_CLIENT_SECRET: ${env:GOOGLE_OAUTH_CLIENT_SECRET}
-    GOOGLE_OAUTH_REFRESH_TOKEN: ${env:GOOGLE_OAUTH_REFRESH_TOKEN}
     LINE_CHANNEL_ACCESS_TOKEN: ${env:LINE_CHANNEL_ACCESS_TOKEN, ''}
     LINE_USER_ID: ${env:LINE_USER_ID, ''}
     # 1回の実行でTranscript取得を試みる動画数の上限。
@@ -30,6 +35,12 @@ provider:
             - dynamodb:PutItem
             - dynamodb:Scan
           Resource: !GetAtt ProcessedVideosTable.Arn
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
+          Resource: !GetAtt ChannelsTable.Arn
 
 functions:
   discover:
@@ -57,6 +68,16 @@ functions:
       - httpApi:
           method: GET
           path: /videos/{videoId}
+  # frontendがログイン時に取得した登録チャンネル一覧を受け取り、DynamoDBへ永続化する。
+  # discover Lambdaはこのテーブルから処理する。
+  channelsApi:
+    handler: src/channelsApiLambda.handler
+    timeout: 30
+    memorySize: 256
+    events:
+      - httpApi:
+          method: POST
+          path: /channels
 
 resources:
   Resources:
@@ -71,3 +92,18 @@ resources:
         KeySchema:
           - AttributeName: videoId
             KeyType: HASH
+    ChannelsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CHANNELS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: userEmail
+            AttributeType: S
+          - AttributeName: channelId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: userEmail
+            KeyType: HASH
+          - AttributeName: channelId
+            KeyType: RANGE

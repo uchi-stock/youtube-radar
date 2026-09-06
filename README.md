@@ -14,7 +14,7 @@
 - 実行基盤: AWS Lambda（EventBridge Schedule）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions・AWS LambdaいずれのデータセンターIPからも、YouTubeの非公式字幕取得エンドポイントがHTTP 429で恒常的にブロックされることが判明した（Issue #16・#19・#24）ため、字幕取得自体は自宅Raspberry Pi（家庭用IP）に委ねる構成にした（Issue #35）
   - `discover`関数（`src/lambda.js`、6時間ごと）: YouTube Data APIで新着動画を検知し、DynamoDBに`PENDING`として登録するのみ
   - `transcriptApi`関数（`src/transcriptApiLambda.js`、API Gateway HTTP API）: 自宅Raspberry Piからの`GET /pending`（未処理動画一覧取得）・`POST /transcripts`（字幕取得結果の送信）を受け付け、字幕を受け取ったら要約〜LINE通知〜DynamoDBの状態更新まで行う。HTTP 429等で取得できなかった場合は`RETRY_WAIT`として次回のRaspberry Piからのポーリングに持ち越す
-- 監視対象チャンネル: 設定ファイルでの手動登録は行わず、YouTube上でチャンネル登録（サブスクライブ）しているチャンネル一覧をOAuth経由で自動取得する（`backend/src/lib/subscriptions.js`）
+- 監視対象チャンネル: 設定ファイルでの手動登録は行わない。frontendにGoogleアカウントでログインすると、そのアカウントのYouTubeチャンネル登録（サブスクライブ）一覧を取得し、`POST /channels`（`backend/src/channelsApiLambda.js`）経由でDynamoDBへ永続化する。`discover`関数はこのDynamoDBのチャンネル一覧（`backend/src/lib/channelsStore.js`）から新着検知を行うため、デプロイ後は一度frontendにログインしてチャンネル一覧を同期させる必要がある（「5. フロントエンド」参照）
 - 処理済み動画IDの記録: DynamoDB（`backend/src/lib/dynamoStore.js`。テーブルは`serverless.yml`でコード管理）
 - LINE Messaging API（`LINE_CHANNEL_ACCESS_TOKEN`・`LINE_USER_ID`）は任意設定。未設定の間はLINE通知のみスキップされる（実行結果はCloudWatch Logsで確認する）
 
@@ -34,7 +34,7 @@
 - `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`: 上記IAMユーザーのアクセスキー（必須。デプロイに使用）
 - `YOUTUBE_API_KEY`: YouTube Data API v3のAPIキー（必須。新着動画確認に使用）
 - `GEMINI_API_KEY`: Gemini APIキー（必須）
-- `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` / `GOOGLE_OAUTH_REFRESH_TOKEN`: チャンネル登録一覧取得用のOAuth認証情報（必須。取得手順は下記）
+- `GOOGLE_OAUTH_CLIENT_ID`: frontendのGoogleログイン、および`POST /channels`のアクセストークン検証で使うOAuthクライアントID（必須。取得手順は下記）
 - `LINE_CHANNEL_ACCESS_TOKEN` / `LINE_USER_ID`: LINE Messaging APIの通知先（任意）
 - `PI_API_KEY`: 自宅Raspberry PiからのAPI呼び出しを認証する共有シークレット（必須。任意の文字列を生成しGitHub Secretsへ登録した上で、Raspberry Pi側にも同じ値を設定する）
 
@@ -53,23 +53,18 @@ mainブランチへのpush（PRマージ）のたびに`.github/workflows/cd.yml
 1. https://console.aws.amazon.com/cloudfront/v3/home を開き、対象のディストリビューション（コメント欄や作成日時等でCloudFormationスタック`youtube-radar-frontend-dev`のものと判別する）を開く
 2. 「ドメイン名」（`https://xxxxxxxxxxxxx.cloudfront.net`形式）がアクセスURL
 3. 初回アクセス時、OAuthクライアントの「承認済みのJavaScript生成元」（https://console.cloud.google.com/apis/credentials ）にこのCloudFrontドメインを追加していないと、Googleログインボタンがエラーになる点に注意
+4. **初回デプロイ後は、上記URLにGoogleアカウントでログインする。** ログインに成功すると、そのアカウントのチャンネル登録一覧が`POST /channels`経由でDynamoDBへ同期され、以降`discover`関数（新着検知）がその一覧を対象に動作するようになる
 
-### OAuth認証情報の取得手順（スマートフォンのブラウザで完結）
+### OAuthクライアントIDの取得手順（スマートフォンのブラウザで完結）
 
-`subscriptions.list`（チャンネル登録一覧の取得）はAPIキーではなくOAuth 2.0によるユーザー本人の認可が必要。
+frontendのGoogleログイン、および`POST /channels`のアクセストークン検証にOAuthクライアントIDを使用する（クライアントシークレット・リフレッシュトークンは不要）。
 
-1. **OAuthクライアントの作成**
-   - https://console.cloud.google.com/apis/credentials にアクセス
-   - 「認証情報を作成」→「OAuthクライアントID」→アプリケーションの種類は**「ウェブ アプリケーション」**を選択（「デスクトップアプリ」を選ぶとOAuth Playgroundでリダイレクト先を登録できず、後続手順で`redirect_uri_mismatch`エラーになる）
-   - 「承認済みのリダイレクトURI」に `https://developers.google.com/oauthplayground` を追加して作成
-   - 表示された「クライアントID」「クライアントシークレット」を控える
-   - 初回は「OAuth同意画面」の設定を求められる場合がある。User Type は「外部」を選び、スコープは後述の`youtube.readonly`を追加、テストユーザーに自分のGoogleアカウントを追加する
-2. **リフレッシュトークンの取得**（[Google OAuth 2.0 Playground](https://developers.google.com/oauthplayground)を利用）
-   - 画面右上の歯車アイコン（OAuth 2.0 Configuration）を開き、「Use your own OAuth credentials」にチェックし、手順1のクライアントID・クライアントシークレットを入力
-   - 左側のScope入力欄に `https://www.googleapis.com/auth/youtube.readonly` を入力し「Authorize APIs」をタップ
-   - 自分のGoogleアカウントでログイン・同意
-   - 「Exchange authorization code for tokens」をタップすると`Refresh token`が表示されるので控える
-3. **GitHub Secretsへ登録**: `GOOGLE_OAUTH_CLIENT_ID`（クライアントID）・`GOOGLE_OAUTH_CLIENT_SECRET`（クライアントシークレット）・`GOOGLE_OAUTH_REFRESH_TOKEN`（リフレッシュトークン）としてそれぞれ登録する
+1. https://console.cloud.google.com/apis/credentials にアクセス
+2. 「認証情報を作成」→「OAuthクライアントID」→アプリケーションの種類は**「ウェブ アプリケーション」**を選択
+3. 「承認済みのJavaScript生成元」に、frontendのCloudFrontドメイン（デプロイ後に判明するため、初回はいったん空のまま作成し、後述の手順5で追記してもよい）を追加して作成
+4. 表示された「クライアントID」を控える
+5. 初回は「OAuth同意画面」の設定を求められる場合がある。User Type は「外部」を選び、スコープに`.../auth/userinfo.email`・`.../auth/youtube.readonly`を追加、テストユーザーに自分のGoogleアカウントを追加する
+6. **GitHub Secretsへ登録**: `GOOGLE_OAUTH_CLIENT_ID`（クライアントID）として登録する
 
 ## 開発
 

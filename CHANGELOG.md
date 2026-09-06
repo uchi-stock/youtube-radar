@@ -1,3 +1,45 @@
+# [1.24.0](https://github.com/uchi-stock/youtube-radar/compare/v1.23.0...v1.24.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** ログイン成功時にチャンネル一覧をbackendへ同期する ([#104](https://github.com/uchi-stock/youtube-radar/issues/104)) ([12fbda3](https://github.com/uchi-stock/youtube-radar/commit/12fbda394d713a8cdb854528207f9d82359edce7))
+
+# [1.23.0](https://github.com/uchi-stock/youtube-radar/compare/v1.22.2...v1.23.0) (2026-09-06)
+
+
+### Features
+
+* **backend:** 新着検知LambdaをDynamoDBのチャンネル一覧から処理するように変更する ([#103](https://github.com/uchi-stock/youtube-radar/issues/103)) ([4737706](https://github.com/uchi-stock/youtube-radar/commit/47377066d740080fca70de4740e1cb981a13d1fe))
+
+## [1.22.2](https://github.com/uchi-stock/youtube-radar/compare/v1.22.1...v1.22.2) (2026-09-06)
+
+
+### Bug Fixes
+
+* **backend:** ChannelsTableのキースキーマ変更に伴うテーブル名衝突を解消する ([#102](https://github.com/uchi-stock/youtube-radar/issues/102)) ([62258e6](https://github.com/uchi-stock/youtube-radar/commit/62258e6d0bc7afac1b225f7fda54a18666dc0bde))
+
+## [1.22.1](https://github.com/uchi-stock/youtube-radar/compare/v1.22.0...v1.22.1) (2026-09-06)
+
+
+### Bug Fixes
+
+* **backend:** POST /channelsの認可をユーザー自身へのスコープ書き込みに変更する ([#101](https://github.com/uchi-stock/youtube-radar/issues/101)) ([51be58d](https://github.com/uchi-stock/youtube-radar/commit/51be58da0ec4558df5b7634b7c03d7087a557ca3))
+
+# [1.22.0](https://github.com/uchi-stock/youtube-radar/compare/v1.21.0...v1.22.0) (2026-09-06)
+
+
+### Features
+
+* **backend:** frontendから登録チャンネル一覧を受け取るAPI（認可付き）を追加する ([#99](https://github.com/uchi-stock/youtube-radar/issues/99)) ([fb2cd02](https://github.com/uchi-stock/youtube-radar/commit/fb2cd02d695e216525496c581c72ba09f32ac92e))
+
+# [1.21.0](https://github.com/uchi-stock/youtube-radar/compare/v1.20.0...v1.21.0) (2026-09-06)
+
+
+### Features
+
+* **backend:** チャンネル一覧永続化用DynamoDBテーブルとストアを追加する ([#98](https://github.com/uchi-stock/youtube-radar/issues/98)) ([f39e1c8](https://github.com/uchi-stock/youtube-radar/commit/f39e1c841972d03d79edbcb9a07520b88c2c3b48))
+
 # [1.20.0](https://github.com/uchi-stock/youtube-radar/compare/v1.19.0...v1.20.0) (2026-09-06)
 
 
