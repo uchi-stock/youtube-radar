@@ -10,6 +10,7 @@ provider:
     cors: true
   environment:
     PROCESSED_VIDEOS_TABLE: ${self:service}-${sls:stage}-processed-videos
+    CHANNELS_TABLE: ${self:service}-${sls:stage}-channels
     YOUTUBE_API_KEY: ${env:YOUTUBE_API_KEY}
     GEMINI_API_KEY: ${env:GEMINI_API_KEY}
     GOOGLE_OAUTH_CLIENT_ID: ${env:GOOGLE_OAUTH_CLIENT_ID}
@@ -30,6 +31,12 @@ provider:
             - dynamodb:PutItem
             - dynamodb:Scan
           Resource: !GetAtt ProcessedVideosTable.Arn
+        - Effect: Allow
+          Action:
+            - dynamodb:PutItem
+            - dynamodb:DeleteItem
+            - dynamodb:Scan
+          Resource: !GetAtt ChannelsTable.Arn
 
 functions:
   discover:
@@ -70,4 +77,15 @@ resources:
             AttributeType: S
         KeySchema:
           - AttributeName: videoId
+            KeyType: HASH
+    ChannelsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.CHANNELS_TABLE}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: channelId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: channelId
             KeyType: HASH
