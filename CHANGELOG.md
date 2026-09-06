@@ -1,3 +1,10 @@
+# [1.17.0](https://github.com/uchi-stock/youtube-radar/compare/v1.16.0...v1.17.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** 動画詳細の概要欄URLをリンク化し、YouTube視聴リンクを追加する ([#79](https://github.com/uchi-stock/youtube-radar/issues/79)) ([42c3160](https://github.com/uchi-stock/youtube-radar/commit/42c316082a5779343fcf21b42c1a4453bed763db))
+
 # [1.16.0](https://github.com/uchi-stock/youtube-radar/compare/v1.15.1...v1.16.0) (2026-09-05)
 
 
