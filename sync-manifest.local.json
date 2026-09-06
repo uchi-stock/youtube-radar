@@ -4,6 +4,7 @@
     { "source": "shared/ui/formatBuildTime.js", "target": "frontend/src/formatBuildTime.js" },
     { "source": "shared/ui/common-theme.css", "target": "frontend/src/common-theme.css" },
     { "source": "shared/ui/bootstrap-theme.css", "target": "frontend/src/bootstrap-theme.css" },
-    { "source": "shared/ui/ShareButton.jsx", "target": "frontend/src/ShareButton.jsx" }
+    { "source": "shared/ui/ShareButton.jsx", "target": "frontend/src/ShareButton.jsx" },
+    { "source": "shared/e2e/screenshot.js", "target": "frontend/e2e/screenshot.js" }
   ]
 }
