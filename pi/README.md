@@ -14,7 +14,7 @@ AWS（GitHub Actions・AWS Lambda等のデータセンターIP）からのYouTub
 
 ## セットアップ（Raspberry Pi上で1回だけ実行する）
 
-Node.js 18以降が必要（グローバルの`fetch`を使用するため）。依存パッケージは無い。
+Node.js 18以降が必要（グローバルの`fetch`を使用するため）。本体（`fetch-transcripts.js`・`lib.js`）に依存パッケージは無い。`package.json`の`c8`はCIでのカバレッジ計測専用のdevDependencyであり、`run.sh`は`npm install`/`npm ci`を一切行わないため、Raspberry Pi上の本番実行には影響しない。
 
 1. このリポジトリの**`main`ブランチを明示的に指定して**git cloneでRaspberry Piへ配置する（`run.sh`が起動時に`origin/main`から`git fetch`・`merge --ff-only`でリポジトリを最新化するため、cloneした状態を維持する必要がある。zip配布等でのコピーは不可。このリポジトリのGitHub既定ブランチはClaude Codeの作業用ブランチになっており頻繁に書き換わるため、`-b main`を省略して素朴に`git clone`すると意図しないブランチがチェックアウトされる点に注意）
 
