@@ -4,9 +4,12 @@
 // リフレッシュトークンの取得・保存は行わない。トークンの有効期限が切れたら再ログインする）。
 
 // userinfo.profileは右上に表示するログインユーザーのアイコン取得のために追加している。
+// userinfo.emailは、backendのPOST /channels（チャンネル一覧同期）がアクセストークンから
+// 呼び出し元のメールアドレスを取得するために必要（backend/src/lib/verifyGoogleAccessToken.js）。
 const SCOPES = [
   "https://www.googleapis.com/auth/youtube.readonly",
   "https://www.googleapis.com/auth/userinfo.profile",
+  "https://www.googleapis.com/auth/userinfo.email",
 ].join(" ");
 
 export interface TokenResponse {
