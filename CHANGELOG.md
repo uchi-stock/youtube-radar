@@ -1,3 +1,10 @@
+# [1.23.0](https://github.com/uchi-stock/youtube-radar/compare/v1.22.2...v1.23.0) (2026-09-06)
+
+
+### Features
+
+* **backend:** 新着検知LambdaをDynamoDBのチャンネル一覧から処理するように変更する ([#103](https://github.com/uchi-stock/youtube-radar/issues/103)) ([4737706](https://github.com/uchi-stock/youtube-radar/commit/47377066d740080fca70de4740e1cb981a13d1fe))
+
 ## [1.22.2](https://github.com/uchi-stock/youtube-radar/compare/v1.22.1...v1.22.2) (2026-09-06)
 
 
