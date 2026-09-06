@@ -12,7 +12,7 @@
 
 ### 2.1 お気に入りチャンネル登録
 
-ユーザーが監視対象となるYouTubeチャンネルを登録する。MVPでは管理画面を作らず、ユーザーがYouTube上でチャンネル登録（サブスクライブ）している一覧をOAuth経由で自動取得し、監視対象とする（`backend/src/lib/subscriptions.js`）。将来的にはWeb UIから個別に登録・除外可能にする。
+ユーザーが監視対象となるYouTubeチャンネルを登録する。MVPでは管理画面を作らず、frontendへのGoogleログインをトリガーに、そのアカウントがYouTube上でチャンネル登録（サブスクライブ）している一覧を自動取得し、`POST /channels`経由でDynamoDBへ永続化することで監視対象とする（`backend/src/lib/channelsStore.js`）。backend側は継続的なOAuthリフレッシュトークンを持たず、ログイン時に取得したアクセストークンのみを都度検証する。将来的にはWeb UIから個別に登録・除外可能にする。
 
 ### 2.2 新着動画検知
 
