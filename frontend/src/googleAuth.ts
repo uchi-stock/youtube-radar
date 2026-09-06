@@ -26,7 +26,7 @@ declare global {
             client_id: string;
             scope: string;
             callback: (response: TokenResponse) => void;
-          }) => { requestAccessToken: () => void };
+          }) => { requestAccessToken: (overrideConfig?: { prompt?: string }) => void };
           revoke: (accessToken: string, done: () => void) => void;
         };
       };
@@ -36,7 +36,13 @@ declare global {
 
 // requestAccessTokenのcallbackはPromiseの外で呼ばれるため、Promiseでラップして
 // 呼び出し側からはasync/awaitで扱えるようにする。
-export function requestAccessToken(clientId: string): Promise<string> {
+//
+// silent: trueの場合、GISに`prompt: ""`を渡す。既に同意済み・Googleのログイン
+// セッションが有効なユーザーであれば、同意画面を一切表示せずアクセストークンを
+// 再取得できる（再訪問のたびに手動でログインボタンを押す必要を減らすため）。
+// Googleセッションが切れている等でサイレント取得できない場合はcallbackが
+// エラーを返すため、呼び出し側で通常のログイン画面へフォールバックする。
+export function requestAccessToken(clientId: string, { silent = false }: { silent?: boolean } = {}): Promise<string> {
   return new Promise((resolve, reject) => {
     if (!window.google) {
       reject(new Error("Google Identity Servicesの読み込みに失敗しました"));
@@ -53,7 +59,7 @@ export function requestAccessToken(clientId: string): Promise<string> {
         resolve(response.access_token);
       },
     });
-    client.requestAccessToken();
+    client.requestAccessToken(silent ? { prompt: "" } : undefined);
   });
 }
 
