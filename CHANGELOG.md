@@ -1,3 +1,10 @@
+# [1.22.0](https://github.com/uchi-stock/youtube-radar/compare/v1.21.0...v1.22.0) (2026-09-06)
+
+
+### Features
+
+* **backend:** frontendから登録チャンネル一覧を受け取るAPI（認可付き）を追加する ([#99](https://github.com/uchi-stock/youtube-radar/issues/99)) ([fb2cd02](https://github.com/uchi-stock/youtube-radar/commit/fb2cd02d695e216525496c581c72ba09f32ac92e))
+
 # [1.21.0](https://github.com/uchi-stock/youtube-radar/compare/v1.20.0...v1.21.0) (2026-09-06)
 
 
