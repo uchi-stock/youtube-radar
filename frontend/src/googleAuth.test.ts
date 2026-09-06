@@ -46,6 +46,25 @@ describe("requestAccessToken", () => {
       "Google Identity Servicesの読み込みに失敗しました",
     );
   });
+
+  it("silent:trueの場合はprompt: \"\"を渡してサイレント取得を試みる", async () => {
+    const requestAccessTokenMock = vi.fn();
+    window.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient: ({ callback }) => {
+            requestAccessTokenMock.mockImplementation(() => callback({ access_token: "token-123" }));
+            return { requestAccessToken: requestAccessTokenMock };
+          },
+          revoke: vi.fn(),
+        },
+      },
+    };
+
+    await requestAccessToken("client-id", { silent: true });
+
+    expect(requestAccessTokenMock).toHaveBeenCalledWith({ prompt: "" });
+  });
 });
 
 describe("revokeAccessToken", () => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { fetchChannelVideos, type ChannelVideo } from "./channelVideos";
 import { requestAccessToken, revokeAccessToken } from "./googleAuth";
 import { fetchGoogleUserInfo, type GoogleUserInfo } from "./googleUserInfo";
@@ -55,16 +55,22 @@ export default function App() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [returningUser, setReturningUser] = useState(() => loadLoginPreference());
 
-  async function handleLogin() {
+  // silent: trueの場合、GISの`prompt: ""`によるサイレント再ログイン（再訪問時、
+  // Googleのログインセッションが有効であればポップアップを出さずにトークンを再取得する）。
+  // 失敗しても無音でフォールバックし、通常のログイン前画面を表示する（エラー表示はしない）。
+  async function attemptLogin(silent: boolean) {
     if (!GOOGLE_CLIENT_ID) {
+      if (silent) return;
       setStatus("error");
       setErrorMessage("Google Client IDが設定されていません（VITE_GOOGLE_CLIENT_ID）");
       return;
     }
     setStatus("loading");
-    setErrorMessage(null);
+    if (!silent) {
+      setErrorMessage(null);
+    }
     try {
-      const token = await requestAccessToken(GOOGLE_CLIENT_ID);
+      const token = await requestAccessToken(GOOGLE_CLIENT_ID, { silent });
       setAccessToken(token);
       const [channelsResult, userInfoResult] = await Promise.all([
         fetchSubscribedChannels(token),
@@ -85,9 +91,26 @@ export default function App() {
         });
       }
     } catch (error) {
+      if (silent) {
+        setStatus("idle");
+        return;
+      }
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : String(error));
     }
+  }
+
+  // 再訪問時（以前ログイン済みの記録がある場合）、マウント時に一度だけサイレント
+  // 再ログインを試みる。Googleセッションが有効な間はログインボタンを押す操作を省略できる。
+  useEffect(() => {
+    if (returningUser) {
+      attemptLogin(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleLogin() {
+    await attemptLogin(false);
   }
 
   async function handleLogout() {

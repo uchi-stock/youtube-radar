@@ -160,14 +160,38 @@ describe("App", () => {
     expect(loadLoginPreference()).toBeNull();
   });
 
-  it("再訪問時、以前ログインしていたユーザーには「おかえりなさい」表示とログイン再開ボタンを出す", async () => {
+  it("再訪問時、サイレント再ログインに失敗した場合は「おかえりなさい」表示とログイン再開ボタンを出す", async () => {
     saveLoginPreference({ name: "テストユーザー", picture: "https://example.com/icon.jpg" });
+    vi.mocked(googleAuth.requestAccessToken).mockRejectedValue(new Error("Googleセッションが切れている"));
 
     render(<App />);
 
+    await waitFor(() => expect(screen.getByRole("button", { name: "ログインを再開" })).toBeInTheDocument());
     expect(screen.getByText("おかえりなさい、テストユーザーさん", { exact: false })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "ログインを再開" })).toBeInTheDocument();
     expect(screen.queryByText(/巡回し/)).not.toBeInTheDocument();
+    // サイレント失敗はエラー表示をしない（無音でフォールバックする）
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("再訪問時、サイレント再ログインに成功した場合はボタン操作無しで登録チャンネル一覧が表示される", async () => {
+    saveLoginPreference({ name: "テストユーザー", picture: "https://example.com/icon.jpg" });
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
+    vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
+      { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
+    ]);
+    mockUserInfo();
+
+    render(<App />);
+
+    await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
+    expect(googleAuth.requestAccessToken).toHaveBeenCalledWith("test-client-id", { silent: true });
+  });
+
+  it("初回訪問（ログイン履歴が無い）場合はサイレント再ログインを試みない", () => {
+    render(<App />);
+
+    expect(googleAuth.requestAccessToken).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Googleでログイン" })).toBeInTheDocument();
   });
 
   it("ログアウト後に別のGoogleアカウントでログインすると、そのアカウントの情報に切り替わる", async () => {
