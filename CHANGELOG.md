@@ -1,3 +1,10 @@
+# [1.20.0](https://github.com/uchi-stock/youtube-radar/compare/v1.19.0...v1.20.0) (2026-09-06)
+
+
+### Features
+
+* **ci:** reusable-ci.ymlのenable_e2e_testを有効化しfrontend-e2e-testジョブを追加する ([#91](https://github.com/uchi-stock/youtube-radar/issues/91)) ([6d018e8](https://github.com/uchi-stock/youtube-radar/commit/6d018e8b62b1d4fdde24cb4acc4c90152eb29139))
+
 # [1.19.0](https://github.com/uchi-stock/youtube-radar/compare/v1.18.0...v1.19.0) (2026-09-06)
 
 
