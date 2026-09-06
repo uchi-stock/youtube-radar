@@ -1,3 +1,10 @@
+# [1.19.0](https://github.com/uchi-stock/youtube-radar/compare/v1.18.0...v1.19.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** Playwright基盤を導入しログイン前画面のE2Eテストを追加する ([#90](https://github.com/uchi-stock/youtube-radar/issues/90)) ([ce1e47b](https://github.com/uchi-stock/youtube-radar/commit/ce1e47b3e6ba70cfd39199214e9491a7b253cf87))
+
 # [1.18.0](https://github.com/uchi-stock/youtube-radar/compare/v1.17.0...v1.18.0) (2026-09-06)
 
 
