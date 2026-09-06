@@ -13,10 +13,10 @@ jobs:
       # 出力する構成のため、dev-standards標準のcheck-coverage-threshold複合actionで80%を
       # 下回った場合にCIを失敗させる。piはnode --testのみでdev-standards側もカバレッジ計測が
       # 標準化されていないため、c8（node --testラッパー）による試験導入としてyoutube-radar
-      # 固有にistanbul形式のcoverage-summary.jsonを出力させている（Issue #82）。piは現状の
-      # 実測分岐カバレッジ（71.42%）が80%に届いていないため、閾値はまず70%から開始する
-      # （80%への引き上げはIssue #83で追跡）
-      packages: '[{"dir":"backend","coverage_threshold":80},{"dir":"pi","coverage_threshold":70},{"dir":"frontend","build":true,"node_version":22,"coverage_threshold":80}]'
+      # 固有にistanbul形式のcoverage-summary.jsonを出力させている（Issue #82）。piのテストを
+      # 追加し4指標すべて80%以上（実測: stmts/lines 100%、branch 97.82%、funcs 100%）まで
+      # 引き上げたため、閾値もbackend/frontendと同じ80%にした（Issue #83）
+      packages: '[{"dir":"backend","coverage_threshold":80},{"dir":"pi","coverage_threshold":80},{"dir":"frontend","build":true,"node_version":22,"coverage_threshold":80}]'
       node_version: 20
       # frontendがdev-standardsのshared/ui配下をsymlink経由で参照するため、
       # package-testジョブでもdev-standardsサブモジュールをチェックアウトする必要がある
