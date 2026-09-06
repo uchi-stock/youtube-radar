@@ -7,7 +7,7 @@ on:
 
 jobs:
   ci:
-    uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.7.3
+    uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.9.0
     with:
       # coverage_threshold: backend/frontendはvitest --coverageでcoverage-summary.jsonを
       # 出力する構成のため、dev-standards標準のcheck-coverage-threshold複合actionで80%を
