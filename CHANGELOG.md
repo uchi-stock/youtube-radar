@@ -1,3 +1,10 @@
+# [1.21.0](https://github.com/uchi-stock/youtube-radar/compare/v1.20.0...v1.21.0) (2026-09-06)
+
+
+### Features
+
+* **backend:** チャンネル一覧永続化用DynamoDBテーブルとストアを追加する ([#98](https://github.com/uchi-stock/youtube-radar/issues/98)) ([f39e1c8](https://github.com/uchi-stock/youtube-radar/commit/f39e1c841972d03d79edbcb9a07520b88c2c3b48))
+
 # [1.20.0](https://github.com/uchi-stock/youtube-radar/compare/v1.19.0...v1.20.0) (2026-09-06)
 
 
