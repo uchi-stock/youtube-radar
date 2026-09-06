@@ -21,5 +21,10 @@ jobs:
       # frontendがdev-standardsのshared/ui配下をsymlink経由で参照するため、
       # package-testジョブでもdev-standardsサブモジュールをチェックアウトする必要がある
       enable_standards_check: true
+      # enable_e2e_test: frontend-e2e-testジョブ（Playwright）を有効化する。この入力は
+      # packages（matrix構成）と排他ではなく独立して制御されるため両立できる。
+      # frontend_dirは既定値"frontend"のままでこのリポジトリのfrontendディレクトリと一致する
+      # （Issue #87）
+      enable_e2e_test: true
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
