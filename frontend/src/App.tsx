@@ -5,8 +5,10 @@ import { fetchGoogleUserInfo, type GoogleUserInfo } from "./googleUserInfo";
 import formatBuildTime from "./formatBuildTime"; // symlink
 import { clearLoginPreference, loadLoginPreference, saveLoginPreference } from "./loginPreference";
 import { linkifyText } from "./linkifyText";
+import ServiceWorkerRegistration from "./ServiceWorkerRegistration"; // symlink
 import ShareButton from "./ShareButton"; // symlink
 import { syncChannels } from "./syncChannels";
+import UpdateNotifier from "./UpdateNotifier"; // symlink
 import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
 
@@ -153,6 +155,8 @@ export default function App() {
 
   return (
     <div className="container py-4">
+      <ServiceWorkerRegistration />
+      <UpdateNotifier />
       <div className="d-flex justify-content-between align-items-start mb-4">
         <h1 className="h3 mb-0">
           youtube-radar{" "}
