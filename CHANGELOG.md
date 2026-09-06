@@ -1,3 +1,10 @@
+# [1.26.0](https://github.com/uchi-stock/youtube-radar/compare/v1.25.0...v1.26.0) (2026-09-06)
+
+
+### Features
+
+* **frontend:** チャンネル選択〜動画一覧〜動画詳細表示のE2Eテストを追加する ([#105](https://github.com/uchi-stock/youtube-radar/issues/105)) ([476925a](https://github.com/uchi-stock/youtube-radar/commit/476925adcf4d9d9bdd769c94c835d436dde6f616))
+
 # [1.25.0](https://github.com/uchi-stock/youtube-radar/compare/v1.24.0...v1.25.0) (2026-09-06)
 
 
