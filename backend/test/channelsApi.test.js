@@ -8,24 +8,23 @@ function jsonResponse(body, ok = true) {
 const CHANNELS = [{ channelId: "c1", name: "チャンネルA" }];
 
 describe("submitChannels", () => {
-  it("正しいアクセストークン・所有者メールアドレスならチャンネル一覧を保存する", async () => {
+  it("正しいアクセストークンなら、そのユーザー自身の行としてチャンネル一覧を保存する", async () => {
     const store = { saveChannels: vi.fn() };
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ aud: "client-id" }))
-      .mockResolvedValueOnce(jsonResponse({ email: "owner@example.com" }));
+      .mockResolvedValueOnce(jsonResponse({ email: "user@example.com" }));
 
     const result = await submitChannels({
       store,
       accessToken: "token",
       channels: CHANNELS,
       clientId: "client-id",
-      ownerEmail: "owner@example.com",
       deps: { fetchImpl },
     });
 
     expect(result).toEqual({ status: "saved", count: 1 });
-    expect(store.saveChannels).toHaveBeenCalledWith(CHANNELS);
+    expect(store.saveChannels).toHaveBeenCalledWith("user@example.com", CHANNELS);
   });
 
   it("アクセストークンが無い場合はunauthorizedを返す", async () => {
@@ -36,26 +35,21 @@ describe("submitChannels", () => {
       accessToken: "",
       channels: CHANNELS,
       clientId: "client-id",
-      ownerEmail: "owner@example.com",
     });
 
     expect(result).toEqual({ status: "unauthorized" });
     expect(store.saveChannels).not.toHaveBeenCalled();
   });
 
-  it("所有者以外のメールアドレスの場合はunauthorizedを返す", async () => {
+  it("アクセストークンの検証に失敗した場合はunauthorizedを返す", async () => {
     const store = { saveChannels: vi.fn() };
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValueOnce(jsonResponse({ aud: "client-id" }))
-      .mockResolvedValueOnce(jsonResponse({ email: "other@example.com" }));
+    const fetchImpl = vi.fn().mockResolvedValueOnce(jsonResponse({}, false));
 
     const result = await submitChannels({
       store,
       accessToken: "token",
       channels: CHANNELS,
       clientId: "client-id",
-      ownerEmail: "owner@example.com",
       deps: { fetchImpl },
     });
 
@@ -68,14 +62,13 @@ describe("submitChannels", () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ aud: "client-id" }))
-      .mockResolvedValueOnce(jsonResponse({ email: "owner@example.com" }));
+      .mockResolvedValueOnce(jsonResponse({ email: "user@example.com" }));
 
     const result = await submitChannels({
       store,
       accessToken: "token",
       channels: undefined,
       clientId: "client-id",
-      ownerEmail: "owner@example.com",
       deps: { fetchImpl },
     });
 
