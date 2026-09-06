@@ -6,6 +6,7 @@ import formatBuildTime from "./formatBuildTime"; // symlink
 import { clearLoginPreference, loadLoginPreference, saveLoginPreference } from "./loginPreference";
 import { linkifyText } from "./linkifyText";
 import ShareButton from "./ShareButton"; // symlink
+import { syncChannels } from "./syncChannels";
 import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
 
@@ -74,6 +75,13 @@ export default function App() {
         setReturningUser({ name: userInfoResult.name, picture: userInfoResult.picture });
       }
       setStatus("loaded");
+
+      // チャンネル一覧のbackendへの同期はベストエフォート。失敗してもログイン自体は成功させる。
+      if (TRANSCRIPT_API_BASE_URL) {
+        syncChannels(channelsResult, token, TRANSCRIPT_API_BASE_URL).catch((error) => {
+          console.error("チャンネル一覧の同期に失敗しました", error);
+        });
+      }
     } catch (error) {
       setStatus("error");
       setErrorMessage(error instanceof Error ? error.message : String(error));

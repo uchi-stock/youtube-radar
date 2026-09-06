@@ -1,11 +1,12 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import * as channelVideos from "./channelVideos";
 import * as googleAuth from "./googleAuth";
 import * as googleUserInfo from "./googleUserInfo";
 import { loadLoginPreference, saveLoginPreference } from "./loginPreference";
+import * as syncChannelsModule from "./syncChannels";
 import * as videoDetail from "./videoDetail";
 import * as youtubeApi from "./youtubeApi";
 
@@ -14,6 +15,7 @@ vi.mock("./googleUserInfo");
 vi.mock("./youtubeApi");
 vi.mock("./channelVideos");
 vi.mock("./videoDetail");
+vi.mock("./syncChannels");
 
 const MOCK_VIDEO = {
   videoId: "v1",
@@ -36,6 +38,10 @@ function mockUserInfo() {
 }
 
 describe("App", () => {
+  beforeEach(() => {
+    vi.mocked(syncChannelsModule.syncChannels).mockResolvedValue(undefined);
+  });
+
   afterEach(() => {
     vi.resetAllMocks();
     localStorage.clear();
@@ -70,6 +76,37 @@ describe("App", () => {
     expect(screen.getByText("登録チャンネル: 2件")).toBeInTheDocument();
     expect(youtubeApi.fetchSubscribedChannels).toHaveBeenCalledWith("token-123");
     expect(screen.getByAltText("テストユーザー")).toHaveAttribute("src", "https://example.com/icon.jpg");
+  });
+
+  it("ログイン成功時に取得済みのチャンネル一覧をbackendへ同期する", async () => {
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
+    const channels = [{ channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" }];
+    vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue(channels);
+    mockUserInfo();
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+
+    await waitFor(() =>
+      expect(syncChannelsModule.syncChannels).toHaveBeenCalledWith(channels, "token-123", "https://api.example.com"),
+    );
+  });
+
+  it("チャンネル一覧の同期に失敗してもログイン処理自体は成功する", async () => {
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
+    vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
+      { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
+    ]);
+    vi.mocked(syncChannelsModule.syncChannels).mockRejectedValue(new Error("HTTP 500"));
+    mockUserInfo();
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+
+    await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("ログインユーザーのアイコンをタップするとプルダウンメニューにログアウト・アプリリンク共有が表示される", async () => {
