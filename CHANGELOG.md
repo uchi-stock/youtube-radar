@@ -1,3 +1,10 @@
+# [1.18.0](https://github.com/uchi-stock/youtube-radar/compare/v1.17.0...v1.18.0) (2026-09-06)
+
+
+### Features
+
+* **ci:** piパッケージにc8によるカバレッジ計測・閾値チェックを試験導入する ([#84](https://github.com/uchi-stock/youtube-radar/issues/84)) ([fd40be2](https://github.com/uchi-stock/youtube-radar/commit/fd40be2f3ef0e78652c42e65f39463e1fabae9f0))
+
 # [1.17.0](https://github.com/uchi-stock/youtube-radar/compare/v1.16.0...v1.17.0) (2026-09-06)
 
 
