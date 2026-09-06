@@ -22,10 +22,6 @@ provider:
     TRANSCRIPT_BATCH_SIZE: ${env:TRANSCRIPT_BATCH_SIZE, '5'}
     # 自宅Raspberry PiからのAPI呼び出しを認証する共有シークレット。
     PI_API_KEY: ${env:PI_API_KEY}
-    # POST /channelsの呼び出し元（Googleアクセストークンのuserinfo.emailで確認）が
-    # 所有者本人かどうかの判定に使う。誰でも書き込めると新着検知の対象チャンネルを
-    # 外部から改ざんできてしまうため。
-    OWNER_GOOGLE_EMAIL: ${env:OWNER_GOOGLE_EMAIL}
   iam:
     role:
       statements:
@@ -98,8 +94,12 @@ resources:
         TableName: ${self:provider.environment.CHANNELS_TABLE}
         BillingMode: PAY_PER_REQUEST
         AttributeDefinitions:
+          - AttributeName: userEmail
+            AttributeType: S
           - AttributeName: channelId
             AttributeType: S
         KeySchema:
-          - AttributeName: channelId
+          - AttributeName: userEmail
             KeyType: HASH
+          - AttributeName: channelId
+            KeyType: RANGE

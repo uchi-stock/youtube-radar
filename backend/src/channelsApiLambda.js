@@ -30,7 +30,6 @@ export async function handler(event) {
     accessToken,
     channels: body.channels,
     clientId: process.env.GOOGLE_OAUTH_CLIENT_ID,
-    ownerEmail: process.env.OWNER_GOOGLE_EMAIL,
   });
 
   if (result.status === "unauthorized") {
