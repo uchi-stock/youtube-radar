@@ -1,3 +1,10 @@
+# [1.29.0](https://github.com/uchi-stock/youtube-radar/compare/v1.28.4...v1.29.0) (2026-09-07)
+
+
+### Features
+
+* **pi:** 字幕取得をヘッドレスブラウザ（Playwright）方式へ移行する ([#119](https://github.com/uchi-stock/youtube-radar/issues/119)) ([96c136f](https://github.com/uchi-stock/youtube-radar/commit/96c136fee5a050ca1b94009d9add33182d3ca875))
+
 ## [1.28.4](https://github.com/uchi-stock/youtube-radar/compare/v1.28.3...v1.28.4) (2026-09-07)
 
 
