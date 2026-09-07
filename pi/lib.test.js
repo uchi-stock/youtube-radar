@@ -1,116 +1,111 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseCaptionTracks, selectTrack, fetchTranscript, fetchPendingVideos, postResult, run } = require("./lib.js");
+const { selectTrack, fetchTranscript, fetchPendingVideos, postResult, run } = require("./lib.js");
 
 function textResponse(body, { ok = true, status = 200 } = {}) {
   return { ok, status, text: async () => body, json: async () => JSON.parse(body) };
 }
 
-function watchPageHtml(captionTracks) {
-  return `<html><script>var ytInitialPlayerResponse = {"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":${JSON.stringify(captionTracks)}}}};</script></html>`;
+// fetchTranscriptが呼ぶpageの2回のevaluate呼び出し（1回目: captionTracks取得、
+// 2回目: 字幕本文のfetch）を、渡された引数の有無で判別してモックする。
+function mockPage({ gotoStatus = 200, tracks = [], body = { ok: true, status: 200, text: "" }, closes } = {}) {
+  return {
+    goto: async () => ({ ok: () => gotoStatus < 400, status: () => gotoStatus }),
+    evaluate: async (_fn, arg) => (arg === undefined ? tracks : body),
+    close: async () => {
+      if (closes) {
+        closes.push(true);
+      }
+    },
+  };
 }
 
-test("parseCaptionTracks: captionTracksが無いHTMLでは空配列を返す", () => {
-  assert.deepEqual(parseCaptionTracks("<html></html>"), []);
-});
-
-test("parseCaptionTracks: 不正なJSONの場合は空配列を返す", () => {
-  const html = '<html><script>var x = {"captionTracks":[{"baseUrl":BROKEN}]};</script></html>';
-  assert.deepEqual(parseCaptionTracks(html), []);
-});
-
-test("parseCaptionTracks: baseUrl・languageCodeが無いトラックは除外する", () => {
-  const html = watchPageHtml([{ languageCode: "ja" }, { baseUrl: "https://example.com/a", languageCode: "ja" }]);
-  assert.deepEqual(parseCaptionTracks(html), [{ langCode: "ja", kind: null, baseUrl: "https://example.com/a" }]);
-});
-
 test("fetchTranscript: 日本語字幕があれば取得できる", async () => {
-  const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(url);
-    if (calls.length === 1) {
-      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
-    }
-    return textResponse('<text start="0">こんにちは</text>');
-  };
+  const closes = [];
+  const newPage = async () =>
+    mockPage({
+      tracks: [{ baseUrl: "https://example.com/ja", languageCode: "ja" }],
+      body: { ok: true, status: 200, text: '<text start="0">こんにちは</text>' },
+      closes,
+    });
 
-  const result = await fetchTranscript("v1", { fetchImpl });
+  const result = await fetchTranscript("v1", { newPage });
 
   assert.deepEqual(result, { status: "OK", transcript: "こんにちは" });
-  assert.equal(calls[1], "https://example.com/ja");
+  assert.equal(closes.length, 1);
 });
 
 test("fetchTranscript: 字幕トラックが無い場合はNOT_FOUND", async () => {
-  const fetchImpl = async () => textResponse(watchPageHtml([]));
+  const newPage = async () => mockPage({ tracks: [] });
 
-  const result = await fetchTranscript("v1", { fetchImpl });
+  const result = await fetchTranscript("v1", { newPage });
 
   assert.deepEqual(result, { status: "NOT_FOUND" });
 });
 
 test("fetchTranscript: 動画ページの取得がHTTPエラーの場合はERROR", async () => {
-  const fetchImpl = async () => textResponse("", { ok: false, status: 429 });
+  const newPage = async () => mockPage({ gotoStatus: 429 });
 
-  const result = await fetchTranscript("v1", { fetchImpl });
+  const result = await fetchTranscript("v1", { newPage });
 
   assert.equal(result.status, "ERROR");
+  assert.equal(result.httpStatus, 429);
+});
+
+test("fetchTranscript: baseUrl・languageCodeが無いトラックは除外する", async () => {
+  const newPage = async () =>
+    mockPage({ tracks: [{ languageCode: "ja" }, { baseUrl: "https://example.com/ja", languageCode: "ja" }] });
+
+  const result = await fetchTranscript("v1", { newPage });
+
+  assert.equal(result.status, "NOT_FOUND");
 });
 
 test("fetchTranscript: 日本語の手動字幕が無い場合は自動生成字幕（asr）を選ぶ", async () => {
-  const calls = [];
-  const fetchImpl = async (url) => {
-    calls.push(url);
-    if (calls.length === 1) {
-      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/asr", languageCode: "ja", kind: "asr" }]));
-    }
-    return textResponse('<text start="0">自動生成字幕</text>');
-  };
+  const newPage = async () =>
+    mockPage({
+      tracks: [{ baseUrl: "https://example.com/asr", languageCode: "ja", kind: "asr" }],
+      body: { ok: true, status: 200, text: '<text start="0">自動生成字幕</text>' },
+    });
 
-  const result = await fetchTranscript("v1", { fetchImpl });
+  const result = await fetchTranscript("v1", { newPage });
 
   assert.deepEqual(result, { status: "OK", transcript: "自動生成字幕" });
-  assert.equal(calls[1], "https://example.com/asr");
 });
 
 test("fetchTranscript: 対象言語のトラックが無い場合は最初のトラックにフォールバックする", async () => {
-  const fetchImpl = async (url) => {
-    if (url.startsWith("https://www.youtube.com/watch")) {
-      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/en", languageCode: "en" }]));
-    }
-    return textResponse('<text start="0">English</text>');
-  };
+  const newPage = async () =>
+    mockPage({
+      tracks: [{ baseUrl: "https://example.com/en", languageCode: "en" }],
+      body: { ok: true, status: 200, text: '<text start="0">English</text>' },
+    });
 
-  const result = await fetchTranscript("v1", { lang: "ja", fetchImpl });
+  const result = await fetchTranscript("v1", { lang: "ja", newPage });
 
   assert.deepEqual(result, { status: "OK", transcript: "English" });
 });
 
 test("fetchTranscript: 字幕本文の取得がHTTPエラーの場合はERROR", async () => {
-  const calls = [];
-  const fetchImpl = async () => {
-    calls.push(1);
-    if (calls.length === 1) {
-      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
-    }
-    return textResponse("", { ok: false, status: 500 });
-  };
+  const newPage = async () =>
+    mockPage({
+      tracks: [{ baseUrl: "https://example.com/ja", languageCode: "ja" }],
+      body: { ok: false, status: 500, text: "" },
+    });
 
-  const result = await fetchTranscript("v1", { fetchImpl });
+  const result = await fetchTranscript("v1", { newPage });
 
   assert.equal(result.status, "ERROR");
+  assert.equal(result.httpStatus, 500);
 });
 
 test("fetchTranscript: 字幕本文が空の場合はNOT_FOUND", async () => {
-  const calls = [];
-  const fetchImpl = async () => {
-    calls.push(1);
-    if (calls.length === 1) {
-      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
-    }
-    return textResponse("<transcript></transcript>");
-  };
+  const newPage = async () =>
+    mockPage({
+      tracks: [{ baseUrl: "https://example.com/ja", languageCode: "ja" }],
+      body: { ok: true, status: 200, text: "<transcript></transcript>" },
+    });
 
-  const result = await fetchTranscript("v1", { fetchImpl });
+  const result = await fetchTranscript("v1", { newPage });
 
   assert.deepEqual(result, { status: "NOT_FOUND" });
 });
@@ -144,20 +139,19 @@ test("run: 未処理動画を取得し字幕取得結果を送信する", async 
     if (url.endsWith("/pending")) {
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }] }));
     }
-    if (url.startsWith("https://www.youtube.com/watch")) {
-      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
-    }
-    if (url === "https://example.com/ja") {
-      return textResponse('<text start="0">本文</text>');
-    }
     if (url.endsWith("/transcripts")) {
       return textResponse(JSON.stringify({ videoId: "v1", status: "reported" }));
     }
     throw new Error(`unexpected url: ${url}`);
   };
+  const newPage = async () =>
+    mockPage({
+      tracks: [{ baseUrl: "https://example.com/ja", languageCode: "ja" }],
+      body: { ok: true, status: 200, text: '<text start="0">本文</text>' },
+    });
   const logger = { log: () => {}, warn: () => {}, error: () => {} };
 
-  const results = await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, logger });
+  const results = await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, newPage, logger });
 
   assert.deepEqual(results, [{ videoId: "v1", status: "reported" }]);
   const pendingCall = calls.find((c) => c.url.endsWith("/pending"));
@@ -169,16 +163,18 @@ test("run: 1件の失敗が他の動画の処理を止めない", async () => {
     if (url.endsWith("/pending")) {
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }, { videoId: "v2" }] }));
     }
-    if (url.includes("v1")) {
-      throw new Error("network error");
-    }
-    if (url.startsWith("https://www.youtube.com/watch")) {
-      return textResponse(watchPageHtml([]));
-    }
     if (url.endsWith("/transcripts")) {
       return textResponse(JSON.stringify({ videoId: "v2", status: "not_found" }));
     }
     throw new Error(`unexpected url: ${url}`);
+  };
+  let callCount = 0;
+  const newPage = async () => {
+    callCount += 1;
+    if (callCount === 1) {
+      throw new Error("network error");
+    }
+    return mockPage({ tracks: [] });
   };
   const logger = { log: () => {}, warn: () => {}, error: () => {} };
 
@@ -186,6 +182,7 @@ test("run: 1件の失敗が他の動画の処理を止めない", async () => {
     apiBaseUrl: "https://api.example.com",
     apiKey: "secret",
     fetchImpl,
+    newPage,
     logger,
     sleepImpl: async () => {},
   });
@@ -201,36 +198,34 @@ test("run: 動画ごとにdelayMsだけ間隔を空ける（1件目の前では�
     if (url.endsWith("/pending")) {
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }, { videoId: "v2" }] }));
     }
-    if (url.startsWith("https://www.youtube.com/watch")) {
-      return textResponse(watchPageHtml([]));
-    }
     if (url.endsWith("/transcripts")) {
       return textResponse(JSON.stringify({ videoId: "x", status: "not_found" }));
     }
     throw new Error(`unexpected url: ${url}`);
   };
+  const newPage = async () => mockPage({ tracks: [] });
   const logger = { log: () => {}, warn: () => {}, error: () => {} };
   const sleepCalls = [];
   const sleepImpl = async (ms) => {
     sleepCalls.push(ms);
   };
 
-  await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, logger, delayMs: 5000, sleepImpl });
+  await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, newPage, logger, delayMs: 5000, sleepImpl });
 
   assert.deepEqual(sleepCalls, [5000]);
 });
 
 test("run: 429を検知した場合は残りの動画の処理を打ち切る", async () => {
-  const calls = [];
+  const pageCalls = [];
   const fetchImpl = async (url) => {
-    calls.push(url);
     if (url.endsWith("/pending")) {
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }, { videoId: "v2" }] }));
     }
-    if (url.startsWith("https://www.youtube.com/watch")) {
-      return textResponse("", { ok: false, status: 429 });
-    }
     throw new Error(`unexpected url: ${url}`);
+  };
+  const newPage = async () => {
+    pageCalls.push(1);
+    return mockPage({ gotoStatus: 429 });
   };
   const warnings = [];
   const logger = { log: () => {}, warn: (msg) => warnings.push(msg), error: () => {} };
@@ -239,12 +234,13 @@ test("run: 429を検知した場合は残りの動画の処理を打ち切る", 
     apiBaseUrl: "https://api.example.com",
     apiKey: "secret",
     fetchImpl,
+    newPage,
     logger,
     sleepImpl: async () => {},
   });
 
   assert.deepEqual(results, [{ videoId: "v1", status: "skipped" }]);
-  assert.ok(!calls.some((url) => url.includes("v2")), "v2への問い合わせが発生していないこと");
+  assert.equal(pageCalls.length, 1, "v2用のページが生成されていないこと");
   assert.equal(warnings.length, 2);
 });
 
@@ -254,19 +250,17 @@ test("run: 字幕取得がERRORの場合は送信せずskippedとして次回に
     if (url.endsWith("/pending")) {
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }] }));
     }
-    if (url.startsWith("https://www.youtube.com/watch")) {
-      return textResponse("", { ok: false, status: 500 });
-    }
     if (url.endsWith("/transcripts")) {
       posted.push({ url, init });
       return textResponse(JSON.stringify({ videoId: "v1", status: "reported" }));
     }
     throw new Error(`unexpected url: ${url}`);
   };
+  const newPage = async () => mockPage({ gotoStatus: 500 });
   const warnings = [];
   const logger = { log: () => {}, warn: (msg) => warnings.push(msg), error: () => {} };
 
-  const results = await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, logger });
+  const results = await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, newPage, logger });
 
   assert.deepEqual(results, [{ videoId: "v1", status: "skipped" }]);
   assert.equal(posted.length, 0);

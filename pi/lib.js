@@ -1,31 +1,8 @@
-// 自宅Raspberry Pi用スクリプトの本体ロジック。依存パッケージ無し
-// （Node.js 18以降のグローバルfetchのみを使用）で完結させ、Raspberry Pi上でのセットアップを
-// 簡素にする。エントリポイントはfetch-transcripts.js。
-
-// 動画再生ページ（/watch）へのリクエストに使うUser-Agent。素朴なリクエストは
-// YouTube側で簡略化されたページを返すことがあるため、一般的なブラウザを装う（Issue #113）。
-const WATCH_USER_AGENT =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-// 動画再生ページのHTMLに埋め込まれたytInitialPlayerResponse内の"captionTracks"配列を
-// 正規表現で抽出する。ページ全体をJSONとしてパースするのは巨大かつ壊れやすいため、
-// 該当する配列部分のみを取り出す（captionTracksの各要素にネストした配列は含まれないため、
-// 非貪欲マッチで対応する最初の"]"まで取得すれば配列全体を取り切れる）。
-function parseCaptionTracks(html) {
-  const match = html.match(/"captionTracks":(\[.*?\])/);
-  if (!match) {
-    return [];
-  }
-  let rawTracks;
-  try {
-    rawTracks = JSON.parse(match[1]);
-  } catch {
-    return [];
-  }
-  return rawTracks
-    .filter((t) => typeof t.baseUrl === "string" && typeof t.languageCode === "string")
-    .map((t) => ({ langCode: t.languageCode, kind: t.kind ?? null, baseUrl: t.baseUrl }));
-}
+// 自宅Raspberry Pi用スクリプトの本体ロジック。字幕取得はヘッドレスブラウザ（Playwright）を
+// 用いて実際のブラウザとして振る舞う（Issue #118）。ブラウザの起動・終了自体は
+// fetch-transcripts.jsが担い、本ファイルはnewPage（ブラウザコンテキストからページを
+// 生成する関数）を外部から注入してもらう形にすることで、ユニットテストではモックした
+// pageオブジェクトのみで実ブラウザ無しに検証できるようにしている。
 
 // 優先順位: 日本語の手動字幕 > 日本語の自動生成字幕 > それ以外の最初のトラック。
 function selectTrack(tracks, lang) {
@@ -53,33 +30,52 @@ function decodeXmlText(text) {
     .trim();
 }
 
-async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch } = {}) {
-  const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
-  const watchRes = await fetchImpl(watchUrl, {
-    headers: { "user-agent": WATCH_USER_AGENT, "accept-language": lang },
-  });
-  if (!watchRes.ok) {
-    return { status: "ERROR", detail: `動画ページの取得に失敗しました: HTTP ${watchRes.status}`, httpStatus: watchRes.status };
-  }
-  const html = await watchRes.text();
-  const track = selectTrack(parseCaptionTracks(html), lang);
-  if (!track) {
-    return { status: "NOT_FOUND" };
-  }
+// ページ内のwindow.ytInitialPlayerResponseから字幕トラック一覧を取り出す。ブラウザの
+// 実行コンテキスト内（page.evaluate）で読むため、サーバーサイドの素朴なfetchでは通らない
+// YouTube側のCookieセッション・bot対策を経由した状態でアクセスできる。
+async function fetchTranscript(videoId, { lang = "ja", newPage }) {
+  const page = await newPage();
+  try {
+    const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+    const response = await page.goto(watchUrl, { waitUntil: "domcontentloaded" });
+    if (response && !response.ok()) {
+      return {
+        status: "ERROR",
+        detail: `動画ページの取得に失敗しました: HTTP ${response.status()}`,
+        httpStatus: response.status(),
+      };
+    }
 
-  const res = await fetchImpl(track.baseUrl, { headers: { "user-agent": WATCH_USER_AGENT } });
-  if (!res.ok) {
-    return { status: "ERROR", detail: `字幕本文の取得に失敗しました: HTTP ${res.status}`, httpStatus: res.status };
+    const rawTracks = await page.evaluate(() => {
+      const captions = window.ytInitialPlayerResponse?.captions;
+      return captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+    });
+    const tracks = rawTracks
+      .filter((t) => typeof t.baseUrl === "string" && typeof t.languageCode === "string")
+      .map((t) => ({ langCode: t.languageCode, kind: t.kind ?? null, baseUrl: t.baseUrl }));
+    const track = selectTrack(tracks, lang);
+    if (!track) {
+      return { status: "NOT_FOUND" };
+    }
+
+    const body = await page.evaluate(async (url) => {
+      const res = await fetch(url);
+      return { ok: res.ok, status: res.status, text: await res.text() };
+    }, track.baseUrl);
+    if (!body.ok) {
+      return { status: "ERROR", detail: `字幕本文の取得に失敗しました: HTTP ${body.status}`, httpStatus: body.status };
+    }
+    if (!body.text.includes("<text")) {
+      return { status: "NOT_FOUND" };
+    }
+    const transcript = [...body.text.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)]
+      .map(([, text]) => decodeXmlText(text))
+      .join(" ")
+      .trim();
+    return transcript.length > 0 ? { status: "OK", transcript } : { status: "NOT_FOUND" };
+  } finally {
+    await page.close();
   }
-  const xml = await res.text();
-  if (!xml.includes("<text")) {
-    return { status: "NOT_FOUND" };
-  }
-  const transcript = [...xml.matchAll(/<text[^>]*>([\s\S]*?)<\/text>/g)]
-    .map(([, body]) => decodeXmlText(body))
-    .join(" ")
-    .trim();
-  return transcript.length > 0 ? { status: "OK", transcript } : { status: "NOT_FOUND" };
 }
 
 async function fetchPendingVideos({ apiBaseUrl, apiKey, fetchImpl = fetch }) {
@@ -108,8 +104,7 @@ const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // 未処理動画一覧を取得し、1件ずつ字幕取得・結果送信を行う。1件の失敗が他の動画の
 // 処理を止めないよう、例外はログに残すのみで処理を継続する（該当動画は次回のポーリングに委ねる）。
-// 動画ごとにdelayMsだけ間隔を空けてYouTubeへリクエストする。1回の実行で複数動画を連続
-// リクエストするとYouTube側のレート制限（HTTP 429）に掛かることが確認されたため（Issue #113）。
+// 動画ごとにdelayMsだけ間隔を空けてYouTubeへリクエストする（Issue #113）。
 // HTTP 429（レート制限）は特定の動画固有の問題ではなくIP単位の一時的な制限であり、そのまま
 // 残りの動画へリクエストを続けても同様に失敗するだけでなく制限を長引かせる恐れがあるため、
 // 429を検知した時点で残りの動画の処理を打ち切る（未処理のまま次回のポーリングに委ねる）。
@@ -117,6 +112,7 @@ async function run({
   apiBaseUrl,
   apiKey,
   fetchImpl = fetch,
+  newPage,
   logger = console,
   delayMs = Number(process.env.PI_REQUEST_DELAY_MS) || 3000,
   sleepImpl = defaultSleep,
@@ -130,7 +126,7 @@ async function run({
       await sleepImpl(delayMs);
     }
     try {
-      const result = await fetchTranscript(video.videoId, { fetchImpl });
+      const result = await fetchTranscript(video.videoId, { newPage });
       if (result.status === "ERROR") {
         logger.warn(`[${video.videoId}] ${result.detail}。今回は送信せず次回に持ち越します`);
         results.push({ videoId: video.videoId, status: "skipped" });
@@ -152,7 +148,6 @@ async function run({
 }
 
 module.exports = {
-  parseCaptionTracks,
   selectTrack,
   decodeXmlText,
   fetchTranscript,
