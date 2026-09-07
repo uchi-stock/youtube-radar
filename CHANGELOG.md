@@ -1,3 +1,10 @@
+## [1.28.3](https://github.com/uchi-stock/youtube-radar/compare/v1.28.2...v1.28.3) (2026-09-07)
+
+
+### Bug Fixes
+
+* **pi:** 動画ごとの字幕取得リクエストに間隔を空ける ([#116](https://github.com/uchi-stock/youtube-radar/issues/116)) ([824bc63](https://github.com/uchi-stock/youtube-radar/commit/824bc6387f8b818c68a2346bf9baade0bc4b9c08))
+
 ## [1.28.2](https://github.com/uchi-stock/youtube-radar/compare/v1.28.1...v1.28.2) (2026-09-07)
 
 
