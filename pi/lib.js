@@ -59,7 +59,7 @@ async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch } = {})
     headers: { "user-agent": WATCH_USER_AGENT, "accept-language": lang },
   });
   if (!watchRes.ok) {
-    return { status: "ERROR", detail: `動画ページの取得に失敗しました: HTTP ${watchRes.status}` };
+    return { status: "ERROR", detail: `動画ページの取得に失敗しました: HTTP ${watchRes.status}`, httpStatus: watchRes.status };
   }
   const html = await watchRes.text();
   const track = selectTrack(parseCaptionTracks(html), lang);
@@ -69,7 +69,7 @@ async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch } = {})
 
   const res = await fetchImpl(track.baseUrl, { headers: { "user-agent": WATCH_USER_AGENT } });
   if (!res.ok) {
-    return { status: "ERROR", detail: `字幕本文の取得に失敗しました: HTTP ${res.status}` };
+    return { status: "ERROR", detail: `字幕本文の取得に失敗しました: HTTP ${res.status}`, httpStatus: res.status };
   }
   const xml = await res.text();
   if (!xml.includes("<text")) {
@@ -110,6 +110,9 @@ const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // 処理を止めないよう、例外はログに残すのみで処理を継続する（該当動画は次回のポーリングに委ねる）。
 // 動画ごとにdelayMsだけ間隔を空けてYouTubeへリクエストする。1回の実行で複数動画を連続
 // リクエストするとYouTube側のレート制限（HTTP 429）に掛かることが確認されたため（Issue #113）。
+// HTTP 429（レート制限）は特定の動画固有の問題ではなくIP単位の一時的な制限であり、そのまま
+// 残りの動画へリクエストを続けても同様に失敗するだけでなく制限を長引かせる恐れがあるため、
+// 429を検知した時点で残りの動画の処理を打ち切る（未処理のまま次回のポーリングに委ねる）。
 async function run({
   apiBaseUrl,
   apiKey,
@@ -131,6 +134,10 @@ async function run({
       if (result.status === "ERROR") {
         logger.warn(`[${video.videoId}] ${result.detail}。今回は送信せず次回に持ち越します`);
         results.push({ videoId: video.videoId, status: "skipped" });
+        if (result.httpStatus === 429) {
+          logger.warn("レート制限（HTTP 429）を検知したため、残りの動画の処理は今回中断します");
+          break;
+        }
         continue;
       }
       const submitted = await postResult(video.videoId, result, { apiBaseUrl, apiKey, fetchImpl });

@@ -220,6 +220,34 @@ test("run: 動画ごとにdelayMsだけ間隔を空ける（1件目の前では�
   assert.deepEqual(sleepCalls, [5000]);
 });
 
+test("run: 429を検知した場合は残りの動画の処理を打ち切る", async () => {
+  const calls = [];
+  const fetchImpl = async (url) => {
+    calls.push(url);
+    if (url.endsWith("/pending")) {
+      return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }, { videoId: "v2" }] }));
+    }
+    if (url.startsWith("https://www.youtube.com/watch")) {
+      return textResponse("", { ok: false, status: 429 });
+    }
+    throw new Error(`unexpected url: ${url}`);
+  };
+  const warnings = [];
+  const logger = { log: () => {}, warn: (msg) => warnings.push(msg), error: () => {} };
+
+  const results = await run({
+    apiBaseUrl: "https://api.example.com",
+    apiKey: "secret",
+    fetchImpl,
+    logger,
+    sleepImpl: async () => {},
+  });
+
+  assert.deepEqual(results, [{ videoId: "v1", status: "skipped" }]);
+  assert.ok(!calls.some((url) => url.includes("v2")), "v2への問い合わせが発生していないこと");
+  assert.equal(warnings.length, 2);
+});
+
 test("run: 字幕取得がERRORの場合は送信せずskippedとして次回に持ち越す", async () => {
   const posted = [];
   const fetchImpl = async (url, init) => {
@@ -227,7 +255,7 @@ test("run: 字幕取得がERRORの場合は送信せずskippedとして次回に
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }] }));
     }
     if (url.startsWith("https://www.youtube.com/watch")) {
-      return textResponse("", { ok: false, status: 429 });
+      return textResponse("", { ok: false, status: 500 });
     }
     if (url.endsWith("/transcripts")) {
       posted.push({ url, init });
