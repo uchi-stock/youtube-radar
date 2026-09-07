@@ -3,6 +3,9 @@ name: CD
 on:
   push:
     branches: [main]
+  # GitHub Secretsのみを変更した場合（コード変更を伴わない場合）でも、
+  # Actionsタブから手動で再デプロイできるようにする
+  workflow_dispatch:
 
 jobs:
   cd:
