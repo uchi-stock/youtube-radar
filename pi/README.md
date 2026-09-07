@@ -12,6 +12,8 @@ AWS（GitHub Actions・AWS Lambda等のデータセンターIP）からのYouTub
 
 1件の動画で失敗（ネットワークエラー等）しても他の動画の処理は継続し、失敗した動画は結果を送信しないため次回実行時に再度候補になる。
 
+動画ごとの処理の間には既定で3秒の間隔を空ける（`PI_REQUEST_DELAY_MS`環境変数でミリ秒単位に変更可能）。複数動画を連続リクエストするとYouTube側のレート制限（HTTP 429）に掛かることが確認されている。
+
 ## セットアップ（Raspberry Pi上で1回だけ実行する）
 
 Node.js 18以降が必要（グローバルの`fetch`を使用するため）。本体（`fetch-transcripts.js`・`lib.js`）に依存パッケージは無い。`package.json`の`c8`はCIでのカバレッジ計測専用のdevDependencyであり、`run.sh`は`npm install`/`npm ci`を一切行わないため、Raspberry Pi上の本番実行には影響しない。
