@@ -1,3 +1,10 @@
+# [1.30.0](https://github.com/uchi-stock/youtube-radar/compare/v1.29.1...v1.30.0) (2026-09-07)
+
+
+### Features
+
+* **backend:** Raspberry Piのサイレント障害をCloudWatch Alarm経由でLINE検知する ([#123](https://github.com/uchi-stock/youtube-radar/issues/123)) ([0347701](https://github.com/uchi-stock/youtube-radar/commit/03477018ef26a8d13eca031dba4a8ac2e0dcdb81))
+
 ## [1.29.1](https://github.com/uchi-stock/youtube-radar/compare/v1.29.0...v1.29.1) (2026-09-07)
 
 
