@@ -34,7 +34,7 @@ Node.js 18以降が必要（グローバルの`fetch`を使用するため）。
    npx playwright install --with-deps chromium
    ```
 
-   - `run.sh`自体は`npm install`を実行しないため、`pi/package.json`が更新された場合（`playwright`のバージョン変更等）は、この手順を再度手動で実行する必要がある
+   - `run.sh`は、`pi/package-lock.json`が更新によって変化した場合（`playwright`のバージョン変更等）のみ自動で`npm ci`・`npx playwright install chromium`を実行する。ただし、OS側の共有ライブラリ更新（`--with-deps`部分）まではcronでの非対話実行に不向きなため自動化していない。Playwrightのブラウザ起動自体に失敗する場合は、この手順（`npx playwright install --with-deps chromium`）を再度手動で実行する
 
 3. AWSのAPI Gateway URL（`API_BASE_URL`）を確認する
    - AWSコンソール（https://console.aws.amazon.com/apigateway ）→ 対象API（`youtube-radar-pipeline-dev-*`関連）→「ステージ」→ 呼び出しURLを控える
@@ -59,13 +59,13 @@ Node.js 18以降が必要（グローバルの`fetch`を使用するため）。
    */10 * * * * /home/pi/youtube-radar/pi/run.sh >> /home/pi/youtube-radar-pi.log 2>&1
    ```
 
-   - `run.sh`は実行のたびに`git fetch`・`checkout -B main origin/main`でリポジトリを常にorigin/mainへ強制的に合わせてから本体スクリプトを実行する（コード更新の自動反映）。ネットワーク不通等で取得に失敗した場合は警告を出しつつ既存のコードで実行を継続する
+   - `run.sh`は実行のたびに`git fetch`・`checkout -B main origin/main`でリポジトリを常にorigin/mainへ強制的に合わせてから本体スクリプトを実行する（コード更新の自動反映）。`pi/package-lock.json`が変化していれば依存パッケージ・Playwrightのブラウザ本体も自動更新する。ネットワーク不通等で取得に失敗した場合は警告を出しつつ既存のコードで実行を継続する
    - crontabのエントリ自体には秘密情報を含めない（`pi/.env`から読み込まれる）
    - ログファイル（例の`youtube-radar-pi.log`）は肥大化するため、必要に応じて`logrotate`等でローテーションする
 
 ## 更新
 
-コードの更新は`run.sh`が実行のたびに自動で反映する（手動での`git pull`は不要）。ただし`pi/package.json`の依存パッケージが変わった場合（`playwright`のバージョン変更等）は、`npm install`の再実行が別途必要（「セットアップ」の手順2を参照）。
+コードの更新・依存パッケージの更新（`pi/package-lock.json`の変化を検知した場合）は`run.sh`が実行のたびに自動で反映する（手動での`git pull`・`npm install`は不要）。ただしOS側の共有ライブラリ更新（`playwright install --with-deps`部分）は自動化していないため、Playwrightのブラウザ起動に失敗する場合は「セットアップ」の手順2を手動で再実行する。
 
 ## テスト
 
