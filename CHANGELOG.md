@@ -1,3 +1,10 @@
+## [1.28.1](https://github.com/uchi-stock/youtube-radar/compare/v1.28.0...v1.28.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* **ci:** CDワークフローにworkflow_dispatchトリガーを追加する ([#111](https://github.com/uchi-stock/youtube-radar/issues/111)) ([#112](https://github.com/uchi-stock/youtube-radar/issues/112)) ([b2d74d1](https://github.com/uchi-stock/youtube-radar/commit/b2d74d16c0a9880ad2dc7b106b36f935482031ce))
+
 # [1.28.0](https://github.com/uchi-stock/youtube-radar/compare/v1.27.0...v1.28.0) (2026-09-06)
 
 
