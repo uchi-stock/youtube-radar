@@ -1,3 +1,10 @@
+## [1.28.4](https://github.com/uchi-stock/youtube-radar/compare/v1.28.3...v1.28.4) (2026-09-07)
+
+
+### Bug Fixes
+
+* **pi:** レート制限(HTTP 429)検知時に残りの動画の処理を打ち切る ([#117](https://github.com/uchi-stock/youtube-radar/issues/117)) ([2090ce8](https://github.com/uchi-stock/youtube-radar/commit/2090ce82ed53e815014d70614e598a38a2d4ce7e))
+
 ## [1.28.3](https://github.com/uchi-stock/youtube-radar/compare/v1.28.2...v1.28.3) (2026-09-07)
 
 
