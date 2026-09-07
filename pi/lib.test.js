@@ -1,17 +1,35 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { fetchTranscript, fetchPendingVideos, postResult, run } = require("./lib.js");
+const { parseCaptionTracks, selectTrack, fetchTranscript, fetchPendingVideos, postResult, run } = require("./lib.js");
 
 function textResponse(body, { ok = true, status = 200 } = {}) {
   return { ok, status, text: async () => body, json: async () => JSON.parse(body) };
 }
+
+function watchPageHtml(captionTracks) {
+  return `<html><script>var ytInitialPlayerResponse = {"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":${JSON.stringify(captionTracks)}}}};</script></html>`;
+}
+
+test("parseCaptionTracks: captionTracksが無いHTMLでは空配列を返す", () => {
+  assert.deepEqual(parseCaptionTracks("<html></html>"), []);
+});
+
+test("parseCaptionTracks: 不正なJSONの場合は空配列を返す", () => {
+  const html = '<html><script>var x = {"captionTracks":[{"baseUrl":BROKEN}]};</script></html>';
+  assert.deepEqual(parseCaptionTracks(html), []);
+});
+
+test("parseCaptionTracks: baseUrl・languageCodeが無いトラックは除外する", () => {
+  const html = watchPageHtml([{ languageCode: "ja" }, { baseUrl: "https://example.com/a", languageCode: "ja" }]);
+  assert.deepEqual(parseCaptionTracks(html), [{ langCode: "ja", kind: null, baseUrl: "https://example.com/a" }]);
+});
 
 test("fetchTranscript: 日本語字幕があれば取得できる", async () => {
   const calls = [];
   const fetchImpl = async (url) => {
     calls.push(url);
     if (calls.length === 1) {
-      return textResponse('<transcript_list><track lang_code="ja"/></transcript_list>');
+      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
     }
     return textResponse('<text start="0">こんにちは</text>');
   };
@@ -19,17 +37,18 @@ test("fetchTranscript: 日本語字幕があれば取得できる", async () => 
   const result = await fetchTranscript("v1", { fetchImpl });
 
   assert.deepEqual(result, { status: "OK", transcript: "こんにちは" });
+  assert.equal(calls[1], "https://example.com/ja");
 });
 
 test("fetchTranscript: 字幕トラックが無い場合はNOT_FOUND", async () => {
-  const fetchImpl = async () => textResponse("<transcript_list></transcript_list>");
+  const fetchImpl = async () => textResponse(watchPageHtml([]));
 
   const result = await fetchTranscript("v1", { fetchImpl });
 
   assert.deepEqual(result, { status: "NOT_FOUND" });
 });
 
-test("fetchTranscript: HTTPエラーの場合はERROR", async () => {
+test("fetchTranscript: 動画ページの取得がHTTPエラーの場合はERROR", async () => {
   const fetchImpl = async () => textResponse("", { ok: false, status: 429 });
 
   const result = await fetchTranscript("v1", { fetchImpl });
@@ -42,7 +61,7 @@ test("fetchTranscript: 日本語の手動字幕が無い場合は自動生成字
   const fetchImpl = async (url) => {
     calls.push(url);
     if (calls.length === 1) {
-      return textResponse('<transcript_list><track lang_code="ja" kind="asr"/></transcript_list>');
+      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/asr", languageCode: "ja", kind: "asr" }]));
     }
     return textResponse('<text start="0">自動生成字幕</text>');
   };
@@ -50,26 +69,13 @@ test("fetchTranscript: 日本語の手動字幕が無い場合は自動生成字
   const result = await fetchTranscript("v1", { fetchImpl });
 
   assert.deepEqual(result, { status: "OK", transcript: "自動生成字幕" });
-  assert.match(calls[1], /kind=asr/);
-});
-
-test("fetchTranscript: lang_code属性が無いトラックは無視する", async () => {
-  const fetchImpl = async (url) => {
-    if (url.includes("type=list")) {
-      return textResponse('<transcript_list><track kind="asr"/><track lang_code="ja"/></transcript_list>');
-    }
-    return textResponse('<text start="0">こんにちは</text>');
-  };
-
-  const result = await fetchTranscript("v1", { fetchImpl });
-
-  assert.deepEqual(result, { status: "OK", transcript: "こんにちは" });
+  assert.equal(calls[1], "https://example.com/asr");
 });
 
 test("fetchTranscript: 対象言語のトラックが無い場合は最初のトラックにフォールバックする", async () => {
   const fetchImpl = async (url) => {
-    if (url.includes("type=list")) {
-      return textResponse('<transcript_list><track lang_code="en"/></transcript_list>');
+    if (url.startsWith("https://www.youtube.com/watch")) {
+      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/en", languageCode: "en" }]));
     }
     return textResponse('<text start="0">English</text>');
   };
@@ -84,7 +90,7 @@ test("fetchTranscript: 字幕本文の取得がHTTPエラーの場合はERROR", 
   const fetchImpl = async () => {
     calls.push(1);
     if (calls.length === 1) {
-      return textResponse('<transcript_list><track lang_code="ja"/></transcript_list>');
+      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
     }
     return textResponse("", { ok: false, status: 500 });
   };
@@ -99,7 +105,7 @@ test("fetchTranscript: 字幕本文が空の場合はNOT_FOUND", async () => {
   const fetchImpl = async () => {
     calls.push(1);
     if (calls.length === 1) {
-      return textResponse('<transcript_list><track lang_code="ja"/></transcript_list>');
+      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
     }
     return textResponse("<transcript></transcript>");
   };
@@ -107,6 +113,10 @@ test("fetchTranscript: 字幕本文が空の場合はNOT_FOUND", async () => {
   const result = await fetchTranscript("v1", { fetchImpl });
 
   assert.deepEqual(result, { status: "NOT_FOUND" });
+});
+
+test("selectTrack: トラックが空の場合はnullを返す", () => {
+  assert.equal(selectTrack([], "ja"), null);
 });
 
 test("fetchPendingVideos: HTTPエラーの場合は例外を投げる", async () => {
@@ -134,10 +144,10 @@ test("run: 未処理動画を取得し字幕取得結果を送信する", async 
     if (url.endsWith("/pending")) {
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }] }));
     }
-    if (url.includes("type=list")) {
-      return textResponse('<transcript_list><track lang_code="ja"/></transcript_list>');
+    if (url.startsWith("https://www.youtube.com/watch")) {
+      return textResponse(watchPageHtml([{ baseUrl: "https://example.com/ja", languageCode: "ja" }]));
     }
-    if (url.includes("timedtext")) {
+    if (url === "https://example.com/ja") {
       return textResponse('<text start="0">本文</text>');
     }
     if (url.endsWith("/transcripts")) {
@@ -162,8 +172,8 @@ test("run: 1件の失敗が他の動画の処理を止めない", async () => {
     if (url.includes("v1")) {
       throw new Error("network error");
     }
-    if (url.includes("type=list")) {
-      return textResponse("<transcript_list></transcript_list>");
+    if (url.startsWith("https://www.youtube.com/watch")) {
+      return textResponse(watchPageHtml([]));
     }
     if (url.endsWith("/transcripts")) {
       return textResponse(JSON.stringify({ videoId: "v2", status: "not_found" }));
@@ -186,7 +196,7 @@ test("run: 字幕取得がERRORの場合は送信せずskippedとして次回に
     if (url.endsWith("/pending")) {
       return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }] }));
     }
-    if (url.includes("type=list")) {
+    if (url.startsWith("https://www.youtube.com/watch")) {
       return textResponse("", { ok: false, status: 429 });
     }
     if (url.endsWith("/transcripts")) {

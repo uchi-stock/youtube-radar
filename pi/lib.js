@@ -2,20 +2,29 @@
 // （Node.js 18以降のグローバルfetchのみを使用）で完結させ、Raspberry Pi上でのセットアップを
 // 簡素にする。エントリポイントはfetch-transcripts.js。
 
-function parseTracks(listXml) {
-  const tracks = [];
-  const trackRegex = /<track\b([^>]*)\/>/g;
-  let match;
-  while ((match = trackRegex.exec(listXml)) !== null) {
-    const attrs = match[1];
-    const langMatch = attrs.match(/lang_code="([^"]*)"/);
-    if (!langMatch) {
-      continue;
-    }
-    const kindMatch = attrs.match(/kind="([^"]*)"/);
-    tracks.push({ langCode: langMatch[1], kind: kindMatch ? kindMatch[1] : null });
+// 動画再生ページ（/watch）へのリクエストに使うUser-Agent。素朴なリクエストは
+// YouTube側で簡略化されたページを返すことがあるため、一般的なブラウザを装う（Issue #113）。
+const WATCH_USER_AGENT =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+// 動画再生ページのHTMLに埋め込まれたytInitialPlayerResponse内の"captionTracks"配列を
+// 正規表現で抽出する。ページ全体をJSONとしてパースするのは巨大かつ壊れやすいため、
+// 該当する配列部分のみを取り出す（captionTracksの各要素にネストした配列は含まれないため、
+// 非貪欲マッチで対応する最初の"]"まで取得すれば配列全体を取り切れる）。
+function parseCaptionTracks(html) {
+  const match = html.match(/"captionTracks":(\[.*?\])/);
+  if (!match) {
+    return [];
   }
-  return tracks;
+  let rawTracks;
+  try {
+    rawTracks = JSON.parse(match[1]);
+  } catch {
+    return [];
+  }
+  return rawTracks
+    .filter((t) => typeof t.baseUrl === "string" && typeof t.languageCode === "string")
+    .map((t) => ({ langCode: t.languageCode, kind: t.kind ?? null, baseUrl: t.baseUrl }));
 }
 
 // 優先順位: 日本語の手動字幕 > 日本語の自動生成字幕 > それ以外の最初のトラック。
@@ -45,22 +54,20 @@ function decodeXmlText(text) {
 }
 
 async function fetchTranscript(videoId, { lang = "ja", fetchImpl = fetch } = {}) {
-  const listUrl = `https://www.youtube.com/api/timedtext?type=list&v=${encodeURIComponent(videoId)}`;
-  const listRes = await fetchImpl(listUrl);
-  if (!listRes.ok) {
-    return { status: "ERROR", detail: `字幕トラック一覧の取得に失敗しました: HTTP ${listRes.status}` };
+  const watchUrl = `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+  const watchRes = await fetchImpl(watchUrl, {
+    headers: { "user-agent": WATCH_USER_AGENT, "accept-language": lang },
+  });
+  if (!watchRes.ok) {
+    return { status: "ERROR", detail: `動画ページの取得に失敗しました: HTTP ${watchRes.status}` };
   }
-  const listXml = await listRes.text();
-  const track = selectTrack(parseTracks(listXml), lang);
+  const html = await watchRes.text();
+  const track = selectTrack(parseCaptionTracks(html), lang);
   if (!track) {
     return { status: "NOT_FOUND" };
   }
 
-  const params = new URLSearchParams({ v: videoId, lang: track.langCode });
-  if (track.kind) {
-    params.set("kind", track.kind);
-  }
-  const res = await fetchImpl(`https://www.youtube.com/api/timedtext?${params.toString()}`);
+  const res = await fetchImpl(track.baseUrl, { headers: { "user-agent": WATCH_USER_AGENT } });
   if (!res.ok) {
     return { status: "ERROR", detail: `字幕本文の取得に失敗しました: HTTP ${res.status}` };
   }
@@ -124,7 +131,7 @@ async function run({ apiBaseUrl, apiKey, fetchImpl = fetch, logger = console }) 
 }
 
 module.exports = {
-  parseTracks,
+  parseCaptionTracks,
   selectTrack,
   decodeXmlText,
   fetchTranscript,

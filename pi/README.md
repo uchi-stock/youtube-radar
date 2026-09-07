@@ -16,7 +16,7 @@ AWS（GitHub Actions・AWS Lambda等のデータセンターIP）からのYouTub
 
 Node.js 18以降が必要（グローバルの`fetch`を使用するため）。本体（`fetch-transcripts.js`・`lib.js`）に依存パッケージは無い。`package.json`の`c8`はCIでのカバレッジ計測専用のdevDependencyであり、`run.sh`は`npm install`/`npm ci`を一切行わないため、Raspberry Pi上の本番実行には影響しない。
 
-1. このリポジトリの**`main`ブランチを明示的に指定して**git cloneでRaspberry Piへ配置する（`run.sh`が起動時に`origin/main`から`git fetch`・`merge --ff-only`でリポジトリを最新化するため、cloneした状態を維持する必要がある。zip配布等でのコピーは不可。このリポジトリのGitHub既定ブランチはClaude Codeの作業用ブランチになっており頻繁に書き換わるため、`-b main`を省略して素朴に`git clone`すると意図しないブランチがチェックアウトされる点に注意）
+1. このリポジトリの**`main`ブランチを明示的に指定して**git cloneでRaspberry Piへ配置する（`run.sh`が起動時に`origin/main`から`git fetch`・`checkout -B main origin/main`でリポジトリを最新化するため、cloneした状態を維持する必要がある。zip配布等でのコピーは不可。このリポジトリのGitHub既定ブランチはClaude Codeの作業用ブランチになっており頻繁に書き換わるため、`-b main`を省略して素朴に`git clone`すると意図しないブランチがチェックアウトされる点に注意）
 
    ```sh
    git clone -b main https://github.com/uchi-stock/youtube-radar.git
@@ -46,7 +46,7 @@ Node.js 18以降が必要（グローバルの`fetch`を使用するため）。
    */10 * * * * /home/pi/youtube-radar/pi/run.sh >> /home/pi/youtube-radar-pi.log 2>&1
    ```
 
-   - `run.sh`は実行のたびに`git pull --ff-only`でリポジトリを最新化してから本体スクリプトを実行する（コード更新の自動反映）。ローカルに変更がある等でfast-forwardできない場合や、ネットワーク不通でpullに失敗した場合は警告を出しつつ既存のコードで実行を継続する
+   - `run.sh`は実行のたびに`git fetch`・`checkout -B main origin/main`でリポジトリを常にorigin/mainへ強制的に合わせてから本体スクリプトを実行する（コード更新の自動反映）。ネットワーク不通等で取得に失敗した場合は警告を出しつつ既存のコードで実行を継続する
    - crontabのエントリ自体には秘密情報を含めない（`pi/.env`から読み込まれる）
    - ログファイル（例の`youtube-radar-pi.log`）は肥大化するため、必要に応じて`logrotate`等でローテーションする
 
