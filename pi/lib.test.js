@@ -182,12 +182,42 @@ test("run: 1件の失敗が他の動画の処理を止めない", async () => {
   };
   const logger = { log: () => {}, warn: () => {}, error: () => {} };
 
-  const results = await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, logger });
+  const results = await run({
+    apiBaseUrl: "https://api.example.com",
+    apiKey: "secret",
+    fetchImpl,
+    logger,
+    sleepImpl: async () => {},
+  });
 
   assert.deepEqual(results, [
     { videoId: "v1", status: "skipped", error: "network error" },
     { videoId: "v2", status: "not_found" },
   ]);
+});
+
+test("run: 動画ごとにdelayMsだけ間隔を空ける（1件目の前では待たない）", async () => {
+  const fetchImpl = async (url) => {
+    if (url.endsWith("/pending")) {
+      return textResponse(JSON.stringify({ videos: [{ videoId: "v1" }, { videoId: "v2" }] }));
+    }
+    if (url.startsWith("https://www.youtube.com/watch")) {
+      return textResponse(watchPageHtml([]));
+    }
+    if (url.endsWith("/transcripts")) {
+      return textResponse(JSON.stringify({ videoId: "x", status: "not_found" }));
+    }
+    throw new Error(`unexpected url: ${url}`);
+  };
+  const logger = { log: () => {}, warn: () => {}, error: () => {} };
+  const sleepCalls = [];
+  const sleepImpl = async (ms) => {
+    sleepCalls.push(ms);
+  };
+
+  await run({ apiBaseUrl: "https://api.example.com", apiKey: "secret", fetchImpl, logger, delayMs: 5000, sleepImpl });
+
+  assert.deepEqual(sleepCalls, [5000]);
 });
 
 test("run: 字幕取得がERRORの場合は送信せずskippedとして次回に持ち越す", async () => {

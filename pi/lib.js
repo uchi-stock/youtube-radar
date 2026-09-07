@@ -104,14 +104,28 @@ async function postResult(videoId, result, { apiBaseUrl, apiKey, fetchImpl = fet
   return res.json();
 }
 
+const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 // 未処理動画一覧を取得し、1件ずつ字幕取得・結果送信を行う。1件の失敗が他の動画の
 // 処理を止めないよう、例外はログに残すのみで処理を継続する（該当動画は次回のポーリングに委ねる）。
-async function run({ apiBaseUrl, apiKey, fetchImpl = fetch, logger = console }) {
+// 動画ごとにdelayMsだけ間隔を空けてYouTubeへリクエストする。1回の実行で複数動画を連続
+// リクエストするとYouTube側のレート制限（HTTP 429）に掛かることが確認されたため（Issue #113）。
+async function run({
+  apiBaseUrl,
+  apiKey,
+  fetchImpl = fetch,
+  logger = console,
+  delayMs = Number(process.env.PI_REQUEST_DELAY_MS) || 3000,
+  sleepImpl = defaultSleep,
+}) {
   const videos = await fetchPendingVideos({ apiBaseUrl, apiKey, fetchImpl });
   logger.log(`未処理動画${videos.length}件を取得しました`);
 
   const results = [];
-  for (const video of videos) {
+  for (const [index, video] of videos.entries()) {
+    if (index > 0) {
+      await sleepImpl(delayMs);
+    }
     try {
       const result = await fetchTranscript(video.videoId, { fetchImpl });
       if (result.status === "ERROR") {
