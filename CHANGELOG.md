@@ -1,3 +1,10 @@
+## [1.29.1](https://github.com/uchi-stock/youtube-radar/compare/v1.29.0...v1.29.1) (2026-09-07)
+
+
+### Bug Fixes
+
+* **pi:** run.shの自動更新にpackage-lock.json変化時のnpm ciを追加する ([#121](https://github.com/uchi-stock/youtube-radar/issues/121)) ([8f70c00](https://github.com/uchi-stock/youtube-radar/commit/8f70c0093a2d6e6fd0289fd76150f983373755d7))
+
 # [1.29.0](https://github.com/uchi-stock/youtube-radar/compare/v1.28.4...v1.29.0) (2026-09-07)
 
 
