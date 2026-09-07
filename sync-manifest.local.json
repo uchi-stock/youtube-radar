@@ -8,6 +8,7 @@
     { "source": "shared/e2e/screenshot.js", "target": "frontend/e2e/screenshot.js" },
     { "source": "shared/pwa/sw.js", "target": "frontend/public/sw.js" },
     { "source": "shared/pwa/ServiceWorkerRegistration.jsx", "target": "frontend/src/ServiceWorkerRegistration.jsx" },
-    { "source": "shared/pwa/UpdateNotifier.jsx", "target": "frontend/src/UpdateNotifier.jsx" }
+    { "source": "shared/pwa/UpdateNotifier.jsx", "target": "frontend/src/UpdateNotifier.jsx" },
+    { "source": "shared/lambda/opsAlertNotifier.js", "target": "backend/src/opsAlertNotifier.js" }
   ]
 }
