@@ -1,3 +1,10 @@
+# [1.31.0](https://github.com/uchi-stock/youtube-radar/compare/v1.30.0...v1.31.0) (2026-09-08)
+
+
+### Features
+
+* **backend:** 動画概要欄取得・要約生成時のタグ生成・タグ付き動画情報の取得APIを追加する ([#127](https://github.com/uchi-stock/youtube-radar/issues/127)) ([1522c7e](https://github.com/uchi-stock/youtube-radar/commit/1522c7e77ccd7048f1c65cab43a976d02e3a5fb0))
+
 # [1.30.0](https://github.com/uchi-stock/youtube-radar/compare/v1.29.1...v1.30.0) (2026-09-07)
 
 
