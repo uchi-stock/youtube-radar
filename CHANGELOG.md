@@ -1,3 +1,10 @@
+# [1.32.0](https://github.com/uchi-stock/youtube-radar/compare/v1.31.0...v1.32.0) (2026-09-08)
+
+
+### Features
+
+* **frontend:** 動画一覧画面にタグ表示・タグ絞り込みUIを追加する ([#128](https://github.com/uchi-stock/youtube-radar/issues/128)) ([6fdb190](https://github.com/uchi-stock/youtube-radar/commit/6fdb1900edca41e5651ee48ea06008e3dd4aea7c))
+
 # [1.31.0](https://github.com/uchi-stock/youtube-radar/compare/v1.30.0...v1.31.0) (2026-09-08)
 
 
