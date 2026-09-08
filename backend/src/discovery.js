@@ -23,6 +23,7 @@ export async function runDiscovery({ channels, store, env, deps = {}, logger = c
         channelName: channel.name,
         title: video.title,
         publishedAt: video.publishedAt,
+        description: video.description,
       });
       results.push({ videoId: video.videoId, status: "pending" });
     }

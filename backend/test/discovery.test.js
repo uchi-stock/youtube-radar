@@ -31,6 +31,7 @@ describe("runDiscovery", () => {
                 resourceId: { videoId: "v1" },
                 title: "テスト動画",
                 publishedAt: "2026-09-01T00:00:00Z",
+                description: "動画の概要欄",
               },
             },
           ],
@@ -50,7 +51,7 @@ describe("runDiscovery", () => {
     expect(store.setStatus).toHaveBeenCalledWith(
       "v1",
       VIDEO_STATUS.PENDING,
-      expect.objectContaining({ channelName: "テストチャンネル", title: "テスト動画" }),
+      expect.objectContaining({ channelName: "テストチャンネル", title: "テスト動画", description: "動画の概要欄" }),
     );
     // 新着検知はYouTube Data APIの2回のみ呼び出し、timedtext等は呼ばない
     expect(fetchImpl).toHaveBeenCalledTimes(2);
