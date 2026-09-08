@@ -1,5 +1,9 @@
 import { createStore } from "./lib/dynamoStore.js";
-import { getPendingVideos, getVideoDetail, submitTranscriptResult } from "./transcriptApi.js";
+import { getPendingVideos, getVideoDetail, getVideosByIds, submitTranscriptResult } from "./transcriptApi.js";
+
+// GET /videos?ids=...で一度に問い合わせられる件数の上限。認証不要の公開エンドポイントのため、
+// 過大なリクエストによるDynamoDB読み取りコスト・レイテンシの増大を避ける。
+const MAX_BULK_VIDEO_IDS = 50;
 
 function jsonResponse(statusCode, body) {
   return { statusCode, headers: { "content-type": "application/json" }, body: JSON.stringify(body) };
@@ -13,10 +17,11 @@ function isAuthorized(event) {
   return Boolean(process.env.PI_API_KEY) && apiKey === process.env.PI_API_KEY;
 }
 
-// GET /videos/{videoId}は、frontendがブラウザから直接呼ぶ読み取り専用の公開エンドポイント
-// （処理状態・要約のみを返す非秘匿データのため）。他のパスはRaspberry Pi専用のため認証が必須。
+// GET /videos・GET /videos/{videoId}は、frontendがブラウザから直接呼ぶ読み取り専用の公開
+// エンドポイント（処理状態・要約・タグのみを返す非秘匿データのため）。他のパスはRaspberry Pi
+// 専用のため認証が必須。
 function isPublicPath(method, path) {
-  return method === "GET" && path.startsWith("/videos/");
+  return method === "GET" && (path === "/videos" || path.startsWith("/videos/"));
 }
 
 export async function handler(event) {
@@ -28,6 +33,17 @@ export async function handler(event) {
   }
 
   const store = createStore(process.env.PROCESSED_VIDEOS_TABLE);
+
+  if (method === "GET" && path === "/videos") {
+    const idsParam = event.queryStringParameters?.ids ?? "";
+    const videoIds = idsParam
+      .split(",")
+      .map((id) => id.trim())
+      .filter(Boolean)
+      .slice(0, MAX_BULK_VIDEO_IDS);
+    const videos = await getVideosByIds({ store, videoIds });
+    return jsonResponse(200, { videos });
+  }
 
   if (method === "GET" && path.startsWith("/videos/")) {
     const videoId = event.pathParameters?.videoId;

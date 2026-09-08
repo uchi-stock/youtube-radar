@@ -18,6 +18,7 @@ describe("fetchLatestVideos", () => {
                 resourceId: { videoId: "v1" },
                 title: "動画1",
                 publishedAt: "2026-09-01T00:00:00Z",
+                description: "動画の概要欄",
               },
             },
           ],
@@ -26,7 +27,28 @@ describe("fetchLatestVideos", () => {
 
     const videos = await fetchLatestVideos("UC1", "key", { fetchImpl });
 
-    expect(videos).toEqual([{ videoId: "v1", title: "動画1", publishedAt: "2026-09-01T00:00:00Z" }]);
+    expect(videos).toEqual([
+      { videoId: "v1", title: "動画1", publishedAt: "2026-09-01T00:00:00Z", description: "動画の概要欄" },
+    ]);
+  });
+
+  it("descriptionが無い場合は空文字列にする", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ items: [{ contentDetails: { relatedPlaylists: { uploads: "PL1" } } }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          items: [{ snippet: { resourceId: { videoId: "v1" }, title: "動画1", publishedAt: "2026-09-01T00:00:00Z" } }],
+        }),
+      });
+
+    const videos = await fetchLatestVideos("UC1", "key", { fetchImpl });
+
+    expect(videos[0].description).toBe("");
   });
 
   it("チャンネルが見つからない場合はエラーを投げる", async () => {

@@ -8,12 +8,17 @@ vi.mock("../src/transcriptApi.js", () => ({
   getPendingVideos: vi.fn(async () => [{ videoId: "v1" }]),
   submitTranscriptResult: vi.fn(async ({ videoId }) => ({ videoId, status: "reported", lineNotified: true })),
   getVideoDetail: vi.fn(async ({ videoId }) =>
-    videoId === "v1" ? { videoId: "v1", status: "COMPLETED", summary: { summary: ["a"] } } : null,
+    videoId === "v1" ? { videoId: "v1", status: "COMPLETED", summary: { summary: ["a"] }, tags: ["ゲーム実況"] } : null,
+  ),
+  getVideosByIds: vi.fn(async ({ videoIds }) =>
+    videoIds.filter((id) => id === "v1").map((id) => ({ videoId: id, status: "COMPLETED", tags: ["ゲーム実況"] })),
   ),
 }));
 
 const { createStore } = await import("../src/lib/dynamoStore.js");
-const { getPendingVideos, submitTranscriptResult, getVideoDetail } = await import("../src/transcriptApi.js");
+const { getPendingVideos, submitTranscriptResult, getVideoDetail, getVideosByIds } = await import(
+  "../src/transcriptApi.js"
+);
 const { handler } = await import("../src/transcriptApiLambda.js");
 
 describe("transcriptApiLambda", () => {
@@ -98,7 +103,12 @@ describe("transcriptApiLambda", () => {
     });
 
     expect(res.statusCode).toBe(200);
-    expect(JSON.parse(res.body)).toEqual({ videoId: "v1", status: "COMPLETED", summary: { summary: ["a"] } });
+    expect(JSON.parse(res.body)).toEqual({
+      videoId: "v1",
+      status: "COMPLETED",
+      summary: { summary: ["a"] },
+      tags: ["ゲーム実況"],
+    });
     expect(getVideoDetail).toHaveBeenCalledWith(expect.objectContaining({ videoId: "v1" }));
   });
 
@@ -111,5 +121,29 @@ describe("transcriptApiLambda", () => {
     });
 
     expect(res.statusCode).toBe(404);
+  });
+
+  it("GET /videosはx-api-keyが無くても呼べ、idsをカンマ区切りで渡してgetVideosByIdsを呼ぶ（公開エンドポイント）", async () => {
+    const res = await handler({
+      headers: {},
+      requestContext: { http: { method: "GET" } },
+      rawPath: "/videos",
+      queryStringParameters: { ids: "v1, v2" },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.body)).toEqual({ videos: [{ videoId: "v1", status: "COMPLETED", tags: ["ゲーム実況"] }] });
+    expect(getVideosByIds).toHaveBeenCalledWith(expect.objectContaining({ videoIds: ["v1", "v2"] }));
+  });
+
+  it("GET /videosでids未指定の場合は空配列を渡す", async () => {
+    const res = await handler({
+      headers: {},
+      requestContext: { http: { method: "GET" } },
+      rawPath: "/videos",
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(getVideosByIds).toHaveBeenCalledWith(expect.objectContaining({ videoIds: [] }));
   });
 });

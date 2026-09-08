@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { getPendingVideos, getVideoDetail, submitTranscriptResult } from "../src/transcriptApi.js";
+import { getPendingVideos, getVideoDetail, getVideosByIds, submitTranscriptResult } from "../src/transcriptApi.js";
 import { VIDEO_STATUS } from "../src/lib/dynamoStore.js";
 
 function jsonResponse(body, ok = true) {
@@ -36,10 +36,10 @@ describe("getPendingVideos", () => {
 });
 
 describe("getVideoDetail", () => {
-  it("登録済みの動画の処理状態・要約を返す", async () => {
+  it("登録済みの動画の処理状態・要約・タグを返す", async () => {
     const summary = { summary: ["a", "b", "c"], importance: 3, recommendation: 3 };
     const store = fakeStore({
-      items: { v1: { ...video, status: VIDEO_STATUS.COMPLETED, summary } },
+      items: { v1: { ...video, status: VIDEO_STATUS.COMPLETED, summary, tags: ["ゲーム実況"] } },
     });
 
     const detail = await getVideoDetail({ store, videoId: "v1" });
@@ -51,6 +51,7 @@ describe("getVideoDetail", () => {
       title: video.title,
       publishedAt: video.publishedAt,
       summary,
+      tags: ["ゲーム実況"],
     });
   });
 
@@ -62,6 +63,14 @@ describe("getVideoDetail", () => {
     expect(detail?.summary).toBeNull();
   });
 
+  it("tagsが無い場合は空配列を返す", async () => {
+    const store = fakeStore({ items: { v1: { ...video, status: VIDEO_STATUS.PENDING } } });
+
+    const detail = await getVideoDetail({ store, videoId: "v1" });
+
+    expect(detail?.tags).toEqual([]);
+  });
+
   it("未登録のvideoIdの場合はnullを返す", async () => {
     const store = fakeStore();
 
@@ -71,19 +80,57 @@ describe("getVideoDetail", () => {
   });
 });
 
+describe("getVideosByIds", () => {
+  it("複数動画の処理状態・タグをまとめて返す", async () => {
+    const store = fakeStore({
+      items: {
+        v1: { ...video, status: VIDEO_STATUS.COMPLETED, tags: ["ゲーム実況"] },
+        v2: { ...video, videoId: "v2", status: VIDEO_STATUS.PENDING },
+      },
+    });
+
+    const details = await getVideosByIds({ store, videoIds: ["v1", "v2", "unknown"] });
+
+    expect(details).toHaveLength(2);
+    expect(details.map((d) => d.videoId)).toEqual(["v1", "v2"]);
+    expect(details[0].tags).toEqual(["ゲーム実況"]);
+  });
+
+  it("該当する動画が無い場合は空配列を返す", async () => {
+    const store = fakeStore();
+
+    const details = await getVideosByIds({ store, videoIds: ["unknown"] });
+
+    expect(details).toEqual([]);
+  });
+});
+
 describe("submitTranscriptResult", () => {
-  it("字幕を受け取ったら要約・LINE通知・COMPLETED更新まで行う", async () => {
+  it("字幕を受け取ったら要約・LINE通知・COMPLETED更新まで行う（タグも保存する）", async () => {
     const fetchImpl = vi
       .fn()
       .mockResolvedValueOnce(
         jsonResponse({
           candidates: [
-            { content: { parts: [{ text: JSON.stringify({ summary: ["a", "b", "c"], importance: 3, recommendation: 3 }) }] } },
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      summary: ["a", "b", "c"],
+                      importance: 3,
+                      recommendation: 3,
+                      tags: ["ゲーム実況"],
+                    }),
+                  },
+                ],
+              },
+            },
           ],
         }),
       )
       .mockResolvedValueOnce(jsonResponse({}));
-    const store = fakeStore({ items: { v1: video } });
+    const store = fakeStore({ items: { v1: { ...video, description: "概要欄" } } });
 
     const result = await submitTranscriptResult({
       store,
@@ -97,8 +144,10 @@ describe("submitTranscriptResult", () => {
     expect(store.setStatus).toHaveBeenCalledWith(
       "v1",
       VIDEO_STATUS.COMPLETED,
-      expect.objectContaining({ summary: expect.any(Object) }),
+      expect.objectContaining({ summary: expect.any(Object), tags: ["ゲーム実況"] }),
     );
+    const [, options] = fetchImpl.mock.calls[0];
+    expect(JSON.parse(options.body).contents[0].parts[0].text).toContain("概要欄");
   });
 
   it("status: NOT_FOUNDが指定された場合はTRANSCRIPT_NOT_FOUNDにする", async () => {

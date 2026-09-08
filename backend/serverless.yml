@@ -68,6 +68,11 @@ functions:
       - httpApi:
           method: GET
           path: /videos/{videoId}
+      # 動画一覧画面でのタグ絞り込み用に、複数動画の処理状態・タグをまとめて取得する
+      # （?ids=v1,v2,v3）。上と同様、認証不要の読み取り専用公開エンドポイント。
+      - httpApi:
+          method: GET
+          path: /videos
   # frontendがログイン時に取得した登録チャンネル一覧を受け取り、DynamoDBへ永続化する。
   # discover Lambdaはこのテーブルから処理する。
   channelsApi:

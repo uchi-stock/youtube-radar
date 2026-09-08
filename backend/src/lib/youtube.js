@@ -26,5 +26,6 @@ export async function fetchLatestVideos(channelId, apiKey, { maxResults = 5, fet
     videoId: item.snippet.resourceId.videoId,
     title: item.snippet.title,
     publishedAt: item.snippet.publishedAt,
+    description: item.snippet.description ?? "",
   }));
 }

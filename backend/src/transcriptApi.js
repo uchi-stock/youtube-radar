@@ -20,8 +20,15 @@ export async function getVideoDetail({ store, videoId }) {
   if (!item) {
     return null;
   }
-  const { status, channelName, title, publishedAt, summary } = item;
-  return { videoId, status, channelName, title, publishedAt, summary: summary ?? null };
+  const { status, channelName, title, publishedAt, summary, tags } = item;
+  return { videoId, status, channelName, title, publishedAt, summary: summary ?? null, tags: tags ?? [] };
+}
+
+// 動画一覧画面でのタグ絞り込み用に、複数動画の処理状態・タグをまとめて取得する。
+// getVideoDetailと同様、認証不要の読み取り専用参照。未登録のvideoIdは結果に含めない。
+export async function getVideosByIds({ store, videoIds }) {
+  const details = await Promise.all(videoIds.map((videoId) => getVideoDetail({ store, videoId })));
+  return details.filter((detail) => detail !== null);
 }
 
 // Raspberry Piから送られた字幕取得結果を受け取り、要約・LINE通知・状態更新まで行う。
@@ -36,7 +43,7 @@ export async function submitTranscriptResult({ store, env, deps = {}, logger = c
   if (!item) {
     return { videoId, status: "not_registered" };
   }
-  const { channelName, title, publishedAt } = item;
+  const { channelName, title, publishedAt, description } = item;
 
   if (status === "NOT_FOUND" || !transcript) {
     await store.setStatus(videoId, VIDEO_STATUS.TRANSCRIPT_NOT_FOUND, { channelName, title, publishedAt });
@@ -44,7 +51,7 @@ export async function submitTranscriptResult({ store, env, deps = {}, logger = c
   }
 
   try {
-    const summary = await summarizeTranscript(title, transcript, env.GEMINI_API_KEY, deps);
+    const { tags, ...summary } = await summarizeTranscript(title, description ?? "", transcript, env.GEMINI_API_KEY, deps);
     const text = buildNotificationText(channelName, { videoId, title }, summary);
     await reportToJobSummary(text, deps);
 
@@ -55,7 +62,7 @@ export async function submitTranscriptResult({ store, env, deps = {}, logger = c
       logger.warn?.(`[${videoId}] LINE_CHANNEL_ACCESS_TOKEN/LINE_USER_ID未設定のためLINE通知をスキップしました`);
     }
 
-    await store.setStatus(videoId, VIDEO_STATUS.COMPLETED, { channelName, title, publishedAt, summary });
+    await store.setStatus(videoId, VIDEO_STATUS.COMPLETED, { channelName, title, publishedAt, summary, tags });
     return { videoId, status: "reported", lineNotified: lineConfigured };
   } catch (error) {
     logger.error(`[${videoId}] 処理に失敗しました: ${error.message}`);
