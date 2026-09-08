@@ -8,6 +8,7 @@ import * as googleUserInfo from "./googleUserInfo";
 import { loadLoginPreference, saveLoginPreference } from "./loginPreference";
 import * as syncChannelsModule from "./syncChannels";
 import * as videoDetail from "./videoDetail";
+import * as videoTagsModule from "./videoTags";
 import * as youtubeApi from "./youtubeApi";
 
 vi.mock("./googleAuth");
@@ -16,6 +17,7 @@ vi.mock("./youtubeApi");
 vi.mock("./channelVideos");
 vi.mock("./videoDetail");
 vi.mock("./syncChannels");
+vi.mock("./videoTags");
 
 const MOCK_VIDEO = {
   videoId: "v1",
@@ -40,6 +42,7 @@ function mockUserInfo() {
 describe("App", () => {
   beforeEach(() => {
     vi.mocked(syncChannelsModule.syncChannels).mockResolvedValue(undefined);
+    vi.mocked(videoTagsModule.fetchVideoTags).mockResolvedValue(new Map());
   });
 
   afterEach(() => {
@@ -398,5 +401,61 @@ describe("App", () => {
     await user.click(screen.getByRole("button", { name: /動画1/ }));
 
     expect(screen.queryByText("文字起こし処理待ちです")).not.toBeInTheDocument();
+  });
+
+  it("タグが取得できた場合、絞り込みチップを表示しタップで一致する動画のみに絞り込む", async () => {
+    vi.mocked(channelVideos.fetchChannelVideos).mockResolvedValue([
+      MOCK_VIDEO,
+      { ...MOCK_VIDEO, videoId: "v2", title: "動画2" },
+    ]);
+    vi.mocked(videoTagsModule.fetchVideoTags).mockResolvedValue(
+      new Map([
+        ["v1", ["ゲーム実況"]],
+        ["v2", ["雑談"]],
+      ]),
+    );
+    vi.mocked(googleAuth.requestAccessToken).mockResolvedValue("token-123");
+    vi.mocked(youtubeApi.fetchSubscribedChannels).mockResolvedValue([
+      { channelId: "UC1", title: "チャンネルA", thumbnailUrl: "" },
+    ]);
+    mockUserInfo();
+    const user = userEvent.setup();
+
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Googleでログイン" }));
+    await waitFor(() => expect(screen.getByText("チャンネルA")).toBeInTheDocument());
+    await user.click(screen.getByRole("button", { name: "チャンネルA" }));
+    await waitFor(() => expect(screen.getByText("動画1")).toBeInTheDocument());
+    expect(screen.getByText("動画2")).toBeInTheDocument();
+
+    await waitFor(() => expect(screen.getByRole("button", { name: "ゲーム実況" })).toBeInTheDocument());
+    expect(screen.getByRole("button", { name: "雑談" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "ゲーム実況" }));
+
+    expect(screen.getByText("動画1")).toBeInTheDocument();
+    expect(screen.queryByText("動画2")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "ゲーム実況" }));
+
+    expect(screen.getByText("動画2")).toBeInTheDocument();
+  });
+
+  it("タグの取得に失敗しても動画一覧の表示は継続する", async () => {
+    vi.mocked(videoTagsModule.fetchVideoTags).mockRejectedValue(new Error("HTTP 500"));
+    const user = await renderWithOneVideo();
+
+    expect(screen.getByText("動画1")).toBeInTheDocument();
+    expect(user).toBeDefined();
+  });
+
+  it("チャンネル一覧に戻ると絞り込みチップ・選択状態がリセットされる", async () => {
+    vi.mocked(videoTagsModule.fetchVideoTags).mockResolvedValue(new Map([["v1", ["ゲーム実況"]]]));
+    const user = await renderWithOneVideo();
+    await waitFor(() => expect(screen.getByRole("button", { name: "ゲーム実況" })).toBeInTheDocument());
+
+    await user.click(screen.getByRole("button", { name: "← チャンネル一覧に戻る" }));
+
+    expect(screen.queryByRole("button", { name: "ゲーム実況" })).not.toBeInTheDocument();
   });
 });

@@ -10,6 +10,7 @@ import ShareButton from "./ShareButton"; // symlink
 import { syncChannels } from "./syncChannels";
 import UpdateNotifier from "./UpdateNotifier"; // symlink
 import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
+import { fetchVideoTags } from "./videoTags";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
 
 type Status = "idle" | "loading" | "loaded" | "error";
@@ -52,6 +53,8 @@ export default function App() {
   const [videosErrorMessage, setVideosErrorMessage] = useState<string | null>(null);
   const [expandedVideoId, setExpandedVideoId] = useState<string | null>(null);
   const [videoDetails, setVideoDetails] = useState<Record<string, VideoDetailEntry>>({});
+  const [videoTags, setVideoTags] = useState<Record<string, string[]>>({});
+  const [selectedTags, setSelectedTags] = useState<Set<string>>(new Set());
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [returningUser, setReturningUser] = useState(() => loadLoginPreference());
 
@@ -135,10 +138,27 @@ export default function App() {
     setSelectedChannel(channel);
     setVideosStatus("loading");
     setVideosErrorMessage(null);
+    setVideoTags({});
+    setSelectedTags(new Set());
     try {
       const result = await fetchChannelVideos(channel.channelId, accessToken as string);
       setVideos(result);
       setVideosStatus("loaded");
+
+      // タグの取得はベストエフォート。失敗しても動画一覧自体は表示する（絞り込みチップが
+      // 出ないだけで、一覧の閲覧自体は継続できるようにするため）。
+      if (TRANSCRIPT_API_BASE_URL) {
+        fetchVideoTags(
+          result.map((v) => v.videoId),
+          TRANSCRIPT_API_BASE_URL,
+        )
+          .then((tagsMap) => {
+            setVideoTags(Object.fromEntries(tagsMap));
+          })
+          .catch((error) => {
+            console.error("動画タグの取得に失敗しました", error);
+          });
+      }
     } catch (error) {
       setVideosStatus("error");
       setVideosErrorMessage(error instanceof Error ? error.message : String(error));
@@ -152,6 +172,20 @@ export default function App() {
     setVideosErrorMessage(null);
     setExpandedVideoId(null);
     setVideoDetails({});
+    setVideoTags({});
+    setSelectedTags(new Set());
+  }
+
+  function handleToggleTag(tag: string) {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) {
+        next.delete(tag);
+      } else {
+        next.add(tag);
+      }
+      return next;
+    });
   }
 
   async function handleToggleVideo(videoId: string) {
@@ -297,9 +331,30 @@ export default function App() {
             </p>
           )}
 
-          {videosStatus === "loaded" && (
-            <ul className="list-group">
-              {videos.map((video) => {
+          {videosStatus === "loaded" && (() => {
+            const allTags = Array.from(new Set(Object.values(videoTags).flat())).sort();
+            const filteredVideos =
+              selectedTags.size === 0
+                ? videos
+                : videos.filter((video) => (videoTags[video.videoId] ?? []).some((tag) => selectedTags.has(tag)));
+            return (
+              <>
+                {allTags.length > 0 && (
+                  <div className="d-flex flex-wrap gap-2 mb-3">
+                    {allTags.map((tag) => (
+                      <button
+                        key={tag}
+                        type="button"
+                        className={`btn btn-sm ${selectedTags.has(tag) ? "btn-primary" : "btn-outline-secondary"}`}
+                        onClick={() => handleToggleTag(tag)}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <ul className="list-group">
+                  {filteredVideos.map((video) => {
                 const detailEntry = videoDetails[video.videoId];
                 return (
                   <li key={video.videoId} className="list-group-item">
@@ -374,10 +429,12 @@ export default function App() {
                       </div>
                     )}
                   </li>
-                );
-              })}
-            </ul>
-          )}
+                    );
+                  })}
+                </ul>
+              </>
+            );
+          })()}
         </>
       )}
     </div>
