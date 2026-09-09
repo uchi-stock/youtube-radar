@@ -1,3 +1,10 @@
+# [1.33.0](https://github.com/uchi-stock/youtube-radar/compare/v1.32.1...v1.33.0) (2026-09-09)
+
+
+### Features
+
+* **pi:** run.shの自動更新でPlaywrightのOS依存ライブラリも可能な範囲で自動更新する ([#132](https://github.com/uchi-stock/youtube-radar/issues/132)) ([44bb067](https://github.com/uchi-stock/youtube-radar/commit/44bb067c668dd9dab28c7a627c74fc4fad837bbd))
+
 ## [1.32.1](https://github.com/uchi-stock/youtube-radar/compare/v1.32.0...v1.32.1) (2026-09-09)
 
 
