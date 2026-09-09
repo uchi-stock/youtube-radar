@@ -34,7 +34,21 @@ Node.js 18以降が必要（グローバルの`fetch`を使用するため）。
    npx playwright install --with-deps chromium
    ```
 
-   - `run.sh`は、`pi/package-lock.json`が更新によって変化した場合（`playwright`のバージョン変更等）のみ自動で`npm ci`・`npx playwright install chromium`を実行する。ただし、OS側の共有ライブラリ更新（`--with-deps`部分）まではcronでの非対話実行に不向きなため自動化していない。Playwrightのブラウザ起動自体に失敗する場合は、この手順（`npx playwright install --with-deps chromium`）を再度手動で実行する
+   - `run.sh`は、`pi/package-lock.json`が更新によって変化した場合（`playwright`のバージョン変更等）のみ自動で依存パッケージ・ブラウザ本体を更新する（次項「OS依存ライブラリ込みの自動更新（任意）」参照）。オプトイン設定をしていない場合、OS側の共有ライブラリ更新（`--with-deps`部分）は自動化されないため、Playwrightのブラウザ起動自体に失敗する場合はこの手順（`npx playwright install --with-deps chromium`）を再度手動で実行する
+
+   ### OS依存ライブラリ込みの自動更新（任意、Issue #131）
+
+   `--with-deps`によるOS側の共有ライブラリ更新はsudoが必要で、cronでの非対話実行では通常パスワードプロンプトで止まってしまう。`run.sh`は依存パッケージ更新時、まず`sudo -n npx playwright install --with-deps chromium`（非対話モード）を試し、passwordless sudoが未設定であれば即座に失敗してブラウザ本体のみの更新（sudo不要）へ安全にフォールバックする。
+
+   OS依存ライブラリ更新まで完全に自動化したい場合は、以下のコマンド（実体のパスに限定したエントリ）に限定したpasswordless sudoを一度だけ設定する。`playwright`を実行するOSユーザー（`whoami`で確認）で実行すること。
+
+   ```sh
+   echo "$(whoami) ALL=(root) NOPASSWD: $(command -v npx) playwright install --with-deps chromium" | sudo tee /etc/sudoers.d/youtube-radar-playwright
+   sudo chmod 440 /etc/sudoers.d/youtube-radar-playwright
+   sudo visudo -c
+   ```
+
+   設定しない場合でも、ブラウザ本体の自動更新（sudo不要な範囲）は引き続き有効に動作する。
 
 3. AWSのAPI Gateway URL（`API_BASE_URL`）を確認する
    - AWSコンソール（https://console.aws.amazon.com/apigateway ）→ 対象API（`youtube-radar-pipeline-dev-*`関連）→「ステージ」→ 呼び出しURLを控える
@@ -65,7 +79,7 @@ Node.js 18以降が必要（グローバルの`fetch`を使用するため）。
 
 ## 更新
 
-コードの更新・依存パッケージの更新（`pi/package-lock.json`の変化を検知した場合）は`run.sh`が実行のたびに自動で反映する（手動での`git pull`・`npm install`は不要）。ただしOS側の共有ライブラリ更新（`playwright install --with-deps`部分）は自動化していないため、Playwrightのブラウザ起動に失敗する場合は「セットアップ」の手順2を手動で再実行する。
+コードの更新・依存パッケージの更新（`pi/package-lock.json`の変化を検知した場合）は`run.sh`が実行のたびに自動で反映する（手動での`git pull`・`npm install`は不要）。OS側の共有ライブラリ更新（`playwright install --with-deps`部分）は、「セットアップ」手順2の「OS依存ライブラリ込みの自動更新（任意）」でpasswordless sudoを設定していれば自動反映される。設定していない場合はこの部分のみ自動化されないため、Playwrightのブラウザ起動に失敗する場合は「セットアップ」の手順2を手動で再実行する。
 
 ## テスト
 

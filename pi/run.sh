@@ -28,17 +28,25 @@ fi
 # pi/package-lock.jsonが更新によって変化した場合（playwrightのバージョン更新等）のみ、
 # 依存パッケージとPlaywrightのブラウザ本体を自動更新する。cronでの実行間隔ごとに
 # 無条件でnpm ciを実行すると不要なオーバーヘッドになるため、変化が無ければスキップする。
-# OS側の共有ライブラリ更新（`playwright install --with-deps`、要sudo）まではcronでの
-# 非対話実行に不向きなため自動化せず、必要になった場合はREADMEに従い手動対応する。
 new_lockfile_hash="$(git hash-object "$LOCKFILE" 2>/dev/null || echo "none")"
 if [ "$old_lockfile_hash" != "$new_lockfile_hash" ]; then
   echo "pi/package-lock.jsonの変更を検知したため、依存パッケージを更新します" >&2
   if ! (cd "$SCRIPT_DIR" && npm ci) >/tmp/youtube-radar-pi-npm-ci.log 2>&1; then
     echo "警告: npm ciに失敗しました。既存の依存パッケージで実行を続行します" >&2
     cat /tmp/youtube-radar-pi-npm-ci.log >&2
-  elif ! (cd "$SCRIPT_DIR" && npx playwright install chromium) >/tmp/youtube-radar-pi-playwright-install.log 2>&1; then
-    echo "警告: Playwrightのブラウザ更新に失敗しました。既存のブラウザで実行を続行します" >&2
-    cat /tmp/youtube-radar-pi-playwright-install.log >&2
+  else
+    # OS側の共有ライブラリ更新（`--with-deps`）にはsudoが必要で、cronでの非対話実行
+    # では通常パスワードプロンプトで止まってしまう。`sudo -n`（非対話モード）で
+    # まず試すことで、passwordless sudoをREADMEの手順でオプトイン設定済みの環境
+    # でのみOS依存ライブラリ込みで自動更新する。未設定の環境では`sudo -n`が
+    # パスワードプロンプトを出さず即座に失敗するため、ブラウザ本体のみの更新へ
+    # 安全にフォールバックする（Issue #131）。
+    if (cd "$SCRIPT_DIR" && sudo -n npx playwright install --with-deps chromium) >/tmp/youtube-radar-pi-playwright-install.log 2>&1; then
+      :
+    elif ! (cd "$SCRIPT_DIR" && npx playwright install chromium) >>/tmp/youtube-radar-pi-playwright-install.log 2>&1; then
+      echo "警告: Playwrightのブラウザ更新に失敗しました。既存のブラウザで実行を続行します" >&2
+      cat /tmp/youtube-radar-pi-playwright-install.log >&2
+    fi
   fi
 fi
 
