@@ -83,20 +83,23 @@ functions:
       - httpApi:
           method: POST
           path: /channels
-  # 運用監視（サイレント障害検知、Issue #122）。CloudWatch Alarm
-  # （TranscriptApiNoInvocationsAlarm）の状態変化をSNS Topic経由で受け取り、
-  # 運用監視専用LINE Botへ通知する（dev-standards docs/ops-monitoring-pattern.md参照）。
-  opsAlert:
-    handler: src/opsAlertLambda.handler
-    timeout: 30
-    memorySize: 128
-    environment:
-      OPS_ALERT_LINE_CHANNEL_ACCESS_TOKEN: ${env:OPS_ALERT_LINE_CHANNEL_ACCESS_TOKEN, ''}
-      OPS_ALERT_LINE_USER_ID: ${env:OPS_ALERT_LINE_USER_ID, ''}
-    events:
-      - sns:
-          arn: !Ref OpsAlertTopic
-          topicName: ${self:service}-${sls:stage}-ops-alert
+  # 運用監視（サイレント障害検知、Issue #122）用のopsAlert Lambdaは、デプロイ用IAM
+  # ユーザーにSNS関連の権限が無くdeploy-backendが継続的に失敗するため、IAM権限対応まで
+  # 一時的に無効化している（Issue #129）。src/opsAlertLambda.js・共有コードのsymlink
+  # （src/opsAlertNotifier.js）・関連テストはコードとして残しており、IAM権限対応後は
+  # 以下のコメントアウトとresourcesのOpsAlertTopic・TranscriptApiNoInvocationsAlarmの
+  # コメントアウトを解除するだけで再度有効化できる。
+  # opsAlert:
+  #   handler: src/opsAlertLambda.handler
+  #   timeout: 30
+  #   memorySize: 128
+  #   environment:
+  #     OPS_ALERT_LINE_CHANNEL_ACCESS_TOKEN: ${env:OPS_ALERT_LINE_CHANNEL_ACCESS_TOKEN, ''}
+  #     OPS_ALERT_LINE_USER_ID: ${env:OPS_ALERT_LINE_USER_ID, ''}
+  #   events:
+  #     - sns:
+  #         arn: !Ref OpsAlertTopic
+  #         topicName: ${self:service}-${sls:stage}-ops-alert
 
 resources:
   Resources:
@@ -126,30 +129,33 @@ resources:
             KeyType: HASH
           - AttributeName: channelId
             KeyType: RANGE
-    OpsAlertTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        TopicName: ${self:service}-${sls:stage}-ops-alert
-    # Raspberry Piが完全に停止・クラッシュした場合、transcriptApi Lambda（GET /pending）は
-    # 一切呼び出されなくなるが、通常のエラーログ監視では検知できない（Issue #122）。
-    # 想定実行間隔（cronで10分ごと）に対して十分な余裕を持たせたPeriod・EvaluationPeriodsで
-    # 「一定時間以上呼び出しが無い」こと自体を異常とみなす（TreatMissingData: breaching）。
-    TranscriptApiNoInvocationsAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: ${self:service}-${sls:stage}-transcriptApi-no-invocations
-        Namespace: AWS/Lambda
-        MetricName: Invocations
-        Dimensions:
-          - Name: FunctionName
-            Value: ${self:service}-${sls:stage}-transcriptApi
-        Statistic: Sum
-        Period: 3600
-        EvaluationPeriods: 1
-        Threshold: 1
-        ComparisonOperator: LessThanThreshold
-        TreatMissingData: breaching
-        AlarmActions:
-          - !Ref OpsAlertTopic
-        OKActions:
-          - !Ref OpsAlertTopic
+    # デプロイ用IAMユーザーにSNS関連の権限が無くdeploy-backendが継続的に失敗するため、
+    # IAM権限対応まで一時的に無効化している（Issue #129。詳細はfunctions.opsAlertの
+    # コメント参照）。
+    # OpsAlertTopic:
+    #   Type: AWS::SNS::Topic
+    #   Properties:
+    #     TopicName: ${self:service}-${sls:stage}-ops-alert
+    # # Raspberry Piが完全に停止・クラッシュした場合、transcriptApi Lambda（GET /pending）は
+    # # 一切呼び出されなくなるが、通常のエラーログ監視では検知できない（Issue #122）。
+    # # 想定実行間隔（cronで10分ごと）に対して十分な余裕を持たせたPeriod・EvaluationPeriodsで
+    # # 「一定時間以上呼び出しが無い」こと自体を異常とみなす（TreatMissingData: breaching）。
+    # TranscriptApiNoInvocationsAlarm:
+    #   Type: AWS::CloudWatch::Alarm
+    #   Properties:
+    #     AlarmName: ${self:service}-${sls:stage}-transcriptApi-no-invocations
+    #     Namespace: AWS/Lambda
+    #     MetricName: Invocations
+    #     Dimensions:
+    #       - Name: FunctionName
+    #         Value: ${self:service}-${sls:stage}-transcriptApi
+    #     Statistic: Sum
+    #     Period: 3600
+    #     EvaluationPeriods: 1
+    #     Threshold: 1
+    #     ComparisonOperator: LessThanThreshold
+    #     TreatMissingData: breaching
+    #     AlarmActions:
+    #       - !Ref OpsAlertTopic
+    #     OKActions:
+    #       - !Ref OpsAlertTopic
