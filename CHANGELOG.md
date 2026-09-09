@@ -1,3 +1,10 @@
+## [1.32.1](https://github.com/uchi-stock/youtube-radar/compare/v1.32.0...v1.32.1) (2026-09-09)
+
+
+### Bug Fixes
+
+* **backend:** 運用監視機能をCD復旧のため一時的に無効化する ([#130](https://github.com/uchi-stock/youtube-radar/issues/130)) ([2ec0fe5](https://github.com/uchi-stock/youtube-radar/commit/2ec0fe59ff4f47783eddce6464e8f60fab77248e))
+
 # [1.32.0](https://github.com/uchi-stock/youtube-radar/compare/v1.31.0...v1.32.0) (2026-09-08)
 
 
