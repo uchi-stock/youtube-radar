@@ -26,6 +26,7 @@ declare global {
             client_id: string;
             scope: string;
             callback: (response: TokenResponse) => void;
+            use_fedcm_for_prompt?: boolean;
           }) => { requestAccessToken: (overrideConfig?: { prompt?: string }) => void };
           revoke: (accessToken: string, done: () => void) => void;
         };
@@ -51,6 +52,10 @@ export function requestAccessToken(clientId: string, { silent = false }: { silen
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: clientId,
       scope: SCOPES,
+      // iOS SafariのITP（サードパーティCookie制限）下では、GISの従来方式（ポップアップ＋
+      // 内部的なサードパーティCookie通信）だとGoogleアカウント選択画面が2回表示される
+      // 既知の問題があるため、サードパーティCookieに依存しないFedCMベースのフローを使う
+      use_fedcm_for_prompt: true,
       callback: (response) => {
         if (response.error || !response.access_token) {
           reject(new Error(response.error ?? "アクセストークンの取得に失敗しました"));
