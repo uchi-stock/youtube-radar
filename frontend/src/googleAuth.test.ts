@@ -65,6 +65,25 @@ describe("requestAccessToken", () => {
 
     expect(requestAccessTokenMock).toHaveBeenCalledWith({ prompt: "" });
   });
+
+  it("initTokenClientにuse_fedcm_for_prompt: trueを渡す（iOS Safariでのアカウント選択二重表示対策）", async () => {
+    const initTokenClientMock = vi.fn(({ callback }) => {
+      const requestAccessTokenMock = vi.fn(() => callback({ access_token: "token-123" }));
+      return { requestAccessToken: requestAccessTokenMock };
+    });
+    window.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient: initTokenClientMock,
+          revoke: vi.fn(),
+        },
+      },
+    };
+
+    await requestAccessToken("client-id");
+
+    expect(initTokenClientMock).toHaveBeenCalledWith(expect.objectContaining({ use_fedcm_for_prompt: true }));
+  });
 });
 
 describe("revokeAccessToken", () => {
