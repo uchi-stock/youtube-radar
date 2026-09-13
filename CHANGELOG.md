@@ -1,3 +1,10 @@
+# [1.36.0](https://github.com/uchi-stock/youtube-radar/compare/v1.35.0...v1.36.0) (2026-09-13)
+
+
+### Features
+
+* **ci:** CodeQLによる静的解析を導入する ([#146](https://github.com/uchi-stock/youtube-radar/issues/146)) ([37eaccd](https://github.com/uchi-stock/youtube-radar/commit/37eaccd77f025ba6b073f4b77b6c82c25581215f)), closes [#145](https://github.com/uchi-stock/youtube-radar/issues/145)
+
 # [1.35.0](https://github.com/uchi-stock/youtube-radar/compare/v1.34.0...v1.35.0) (2026-09-13)
 
 
