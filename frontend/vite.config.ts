@@ -19,6 +19,12 @@ if (process.env.CI && !process.env.VITE_GOOGLE_CLIENT_ID) {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    // E2Eカバレッジ計測（monocart-reporter）がソースファイル単位（src/App.tsx等）まで
+    // 遡って集計するために必要。無いとビルド後のバンドルファイル単位でしか計測できない
+    // （docs/e2e-coverage-pattern.md参照）
+    sourcemap: true,
+  },
   // semantic-releaseがバージョンを更新するリポジトリルートのpackage.jsonを参照する
   // （frontend/package.jsonのversionは固定値のまま更新されないため）
   define: {

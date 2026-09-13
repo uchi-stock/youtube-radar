@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./coverageFixture.js"; // symlink
 import { login, mockGoogleLogin } from "./mockGoogleLogin.js";
 import { captureScreenshot } from "./screenshot.js"; // symlink
 

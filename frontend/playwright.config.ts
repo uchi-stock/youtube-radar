@@ -9,7 +9,29 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: [
+    ["html"],
+    [
+      "monocart-reporter",
+      {
+        name: "youtube-radar frontend E2E Report",
+        outputFile: "./monocart-report/index.html",
+        coverage: {
+          // frontend-testと同じパス・形式（coverage/coverage-summary.json）に出力する
+          // （check-coverage-threshold複合actionの既定、docs/e2e-coverage-pattern.md参照）
+          outputDir: "./coverage",
+          reports: [["json-summary"], ["console-summary"]],
+          // ビルド成果物（自プロダクトのオリジン配下のみ）を対象にする
+          entryFilter: (entry: { url: string }) => entry.url.includes("localhost:4173"),
+          // node_modules（依存パッケージのソース）を除外し、src/配下のみを対象にする
+          sourceFilter: {
+            "**/node_modules/**": false,
+            "src/**": true,
+          },
+        },
+      },
+    ],
+  ],
   use: {
     baseURL: "http://localhost:4173",
     trace: "on-first-retry",
