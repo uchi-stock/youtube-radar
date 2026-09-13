@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./coverageFixture.js"; // symlink
 import { captureScreenshot } from "./screenshot.js"; // symlink
 
 test("ログイン前画面にアプリ概要説明とログインボタンを表示する", async ({ page }, testInfo) => {
