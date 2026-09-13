@@ -1,3 +1,10 @@
+# [1.35.0](https://github.com/uchi-stock/youtube-radar/compare/v1.34.0...v1.35.0) (2026-09-13)
+
+
+### Features
+
+* **ci:** コード重複検知の閾値をラチェット値2%に設定する ([#144](https://github.com/uchi-stock/youtube-radar/issues/144)) ([6bfc143](https://github.com/uchi-stock/youtube-radar/commit/6bfc1430ca9b53cfb213638c0ab1ccea41bf8412)), closes [#134](https://github.com/uchi-stock/youtube-radar/issues/134)
+
 # [1.34.0](https://github.com/uchi-stock/youtube-radar/compare/v1.33.1...v1.34.0) (2026-09-13)
 
 
