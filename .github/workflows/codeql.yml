@@ -1,0 +1,14 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # コード変更が無い期間もCodeQLのクエリセット自体の更新を検知するため、週次で定期実行する
+  # （dev-standards推奨事項）。
+  schedule:
+    - cron: "0 18 * * 0"
+
+jobs:
+  codeql:
+    uses: bamiyanapp/dev-standards/.github/workflows/reusable-codeql.yml@v2.14.0
