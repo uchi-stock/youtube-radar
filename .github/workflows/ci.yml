@@ -28,8 +28,11 @@ jobs:
       enable_e2e_test: true
       # enable_duplication_check: jscpdによるコード重複検知（Issue #134）。dev-standards標準の
       # ラチェット方式（docs/nextjs-static-lambda-pattern.md「jscpd/E2Eカバレッジの閾値設定」）に
-      # 従い、まずduplication_threshold未設定（0、レポート表示のみ）でCIを実行し、実測値を
-      # 複数回観測してから、実測値より少し厳しい値をduplication_thresholdへ設定する
+      # 従い、duplication_threshold未設定（0、レポート表示のみ）でCIを実行し実測値を確認した
+      # ところ、重複0件（0.00%）だった（PR #143）。実測値ちょうどを閾値にすると些細な重複の
+      # 発生で即座にCIが赤くなるため、実測値に対しわずかな余裕を持たせたラチェット値として
+      # 2%を設定する（dev-standards他プロダクトの実例と同じ値）
       enable_duplication_check: true
+      duplication_threshold: 2
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
