@@ -1,3 +1,10 @@
+# [1.38.0](https://github.com/uchi-stock/youtube-radar/compare/v1.37.0...v1.38.0) (2026-09-13)
+
+
+### Features
+
+* **ci:** E2Eテストカバレッジの閾値をラチェット値45%に設定する ([#150](https://github.com/uchi-stock/youtube-radar/issues/150)) ([c5252c8](https://github.com/uchi-stock/youtube-radar/commit/c5252c86e27f73afe43b061f5857e1f59ba264b9)), closes [#135](https://github.com/uchi-stock/youtube-radar/issues/135)
+
 # [1.37.0](https://github.com/uchi-stock/youtube-radar/compare/v1.36.0...v1.37.0) (2026-09-13)
 
 
