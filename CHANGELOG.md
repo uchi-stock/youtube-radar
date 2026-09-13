@@ -1,3 +1,11 @@
+# [1.37.0](https://github.com/uchi-stock/youtube-radar/compare/v1.36.0...v1.37.0) (2026-09-13)
+
+
+### Features
+
+* **frontend:** E2Eテストのコードカバレッジ計測を導入する ([#147](https://github.com/uchi-stock/youtube-radar/issues/147)) ([f2cb4d3](https://github.com/uchi-stock/youtube-radar/commit/f2cb4d32254c00920ca137cd6ba4788ec03e86e5)), closes [#135](https://github.com/uchi-stock/youtube-radar/issues/135)
+* **frontend:** PWAのホーム画面アイコンを設定する ([#149](https://github.com/uchi-stock/youtube-radar/issues/149)) ([64c3eda](https://github.com/uchi-stock/youtube-radar/commit/64c3eda28351b3291a0436f4d16ee2d7302aaa63)), closes [#148](https://github.com/uchi-stock/youtube-radar/issues/148)
+
 # [1.36.0](https://github.com/uchi-stock/youtube-radar/compare/v1.35.0...v1.36.0) (2026-09-13)
 
 
