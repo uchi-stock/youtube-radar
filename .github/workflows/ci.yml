@@ -26,6 +26,13 @@ jobs:
       # frontend_dirは既定値"frontend"のままでこのリポジトリのfrontendディレクトリと一致する
       # （Issue #87）
       enable_e2e_test: true
+      # e2e_coverage_threshold: frontend-e2e-testジョブ自体のE2Eテストカバレッジ
+      # （ユニットテストのcoverage_thresholdとは別軸、Issue #135）。PR #147で
+      # monocart-reporterによる計測基盤のみ先に導入し、CI実行での実測値
+      # （lines 70.58%・statements 69.76%・functions 59.7%・branches 51.35%）を
+      # 確認した。dev-standards標準のラチェット方式に従い、最も低い実測値
+      # （branches 51.35%）に対しわずかな余裕を持たせた45を設定する
+      e2e_coverage_threshold: 45
       # enable_duplication_check: jscpdによるコード重複検知（Issue #134）。dev-standards標準の
       # ラチェット方式（docs/nextjs-static-lambda-pattern.md「jscpd/E2Eカバレッジの閾値設定」）に
       # 従い、duplication_threshold未設定（0、レポート表示のみ）でCIを実行し実測値を確認した
