@@ -1,3 +1,10 @@
+# [1.34.0](https://github.com/uchi-stock/youtube-radar/compare/v1.33.1...v1.34.0) (2026-09-13)
+
+
+### Features
+
+* **ci:** コード重複検知（enable_duplication_check）を導入する ([#143](https://github.com/uchi-stock/youtube-radar/issues/143)) ([aa13679](https://github.com/uchi-stock/youtube-radar/commit/aa13679c1c22094751b7e169b62728f37bb56e6a)), closes [#134](https://github.com/uchi-stock/youtube-radar/issues/134)
+
 ## [1.33.1](https://github.com/uchi-stock/youtube-radar/compare/v1.33.0...v1.33.1) (2026-09-10)
 
 
