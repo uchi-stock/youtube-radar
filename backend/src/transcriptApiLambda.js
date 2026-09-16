@@ -24,6 +24,54 @@ function isPublicPath(method, path) {
   return method === "GET" && (path === "/videos" || path.startsWith("/videos/"));
 }
 
+async function handleListVideos(event, store) {
+  const idsParam = event.queryStringParameters?.ids ?? "";
+  const videoIds = idsParam
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean)
+    .slice(0, MAX_BULK_VIDEO_IDS);
+  const videos = await getVideosByIds({ store, videoIds });
+  return jsonResponse(200, { videos });
+}
+
+async function handleGetVideoDetail(event, store) {
+  const videoId = event.pathParameters?.videoId;
+  const detail = await getVideoDetail({ store, videoId });
+  if (!detail) {
+    return jsonResponse(404, { error: "not_registered" });
+  }
+  return jsonResponse(200, detail);
+}
+
+async function handleGetPending(store) {
+  const videos = await getPendingVideos({
+    store,
+    maxVideosPerRun: Number(process.env.TRANSCRIPT_BATCH_SIZE ?? 5),
+  });
+  return jsonResponse(200, { videos });
+}
+
+async function handlePostTranscript(event, store) {
+  let body;
+  try {
+    body = JSON.parse(event.body ?? "{}");
+  } catch {
+    return jsonResponse(400, { error: "invalid JSON body" });
+  }
+  const result = await submitTranscriptResult({
+    store,
+    env: process.env,
+    videoId: body.videoId,
+    transcript: body.transcript,
+    status: body.status,
+  });
+  if (result.status === "not_registered") {
+    return jsonResponse(404, result);
+  }
+  return jsonResponse(result.status === "failed" ? 500 : 200, result);
+}
+
 export async function handler(event) {
   const method = event.requestContext?.http?.method;
   const path = event.rawPath;
@@ -35,51 +83,16 @@ export async function handler(event) {
   const store = createStore(process.env.PROCESSED_VIDEOS_TABLE);
 
   if (method === "GET" && path === "/videos") {
-    const idsParam = event.queryStringParameters?.ids ?? "";
-    const videoIds = idsParam
-      .split(",")
-      .map((id) => id.trim())
-      .filter(Boolean)
-      .slice(0, MAX_BULK_VIDEO_IDS);
-    const videos = await getVideosByIds({ store, videoIds });
-    return jsonResponse(200, { videos });
+    return handleListVideos(event, store);
   }
-
   if (method === "GET" && path.startsWith("/videos/")) {
-    const videoId = event.pathParameters?.videoId;
-    const detail = await getVideoDetail({ store, videoId });
-    if (!detail) {
-      return jsonResponse(404, { error: "not_registered" });
-    }
-    return jsonResponse(200, detail);
+    return handleGetVideoDetail(event, store);
   }
-
   if (method === "GET" && path === "/pending") {
-    const videos = await getPendingVideos({
-      store,
-      maxVideosPerRun: Number(process.env.TRANSCRIPT_BATCH_SIZE ?? 5),
-    });
-    return jsonResponse(200, { videos });
+    return handleGetPending(store);
   }
-
   if (method === "POST" && path === "/transcripts") {
-    let body;
-    try {
-      body = JSON.parse(event.body ?? "{}");
-    } catch {
-      return jsonResponse(400, { error: "invalid JSON body" });
-    }
-    const result = await submitTranscriptResult({
-      store,
-      env: process.env,
-      videoId: body.videoId,
-      transcript: body.transcript,
-      status: body.status,
-    });
-    if (result.status === "not_registered") {
-      return jsonResponse(404, result);
-    }
-    return jsonResponse(result.status === "failed" ? 500 : 200, result);
+    return handlePostTranscript(event, store);
   }
 
   return jsonResponse(404, { error: "not found" });
