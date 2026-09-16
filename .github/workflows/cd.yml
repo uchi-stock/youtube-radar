@@ -9,7 +9,7 @@ on:
 
 jobs:
   cd:
-    uses: bamiyanapp/dev-standards/.github/workflows/reusable-cd.yml@v2.7.3
+    uses: bamiyanapp/dev-standards/.github/workflows/reusable-cd.yml@v2.17.3
     with:
       enable_release: true
       enable_shared_release_config: true
@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.7.3
+      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.17.3
         with:
           working-directory: backend
           node-version: "22"
@@ -48,7 +48,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: true
-      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.7.3
+      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.17.3
         with:
           working-directory: frontend
           node-version: "22"
