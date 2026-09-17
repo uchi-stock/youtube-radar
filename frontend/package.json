@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint . --max-warnings 0",
+    "lint": "eslint . --max-warnings 0 && stylelint --config ../stylelint.config.cjs \"src/**/*.css\" --ignore-pattern src/bootstrap-theme.css --ignore-pattern src/common-theme.css",
     "preview": "vite preview",
     "test": "vitest run --coverage --coverage.reporter=text --coverage.reporter=json-summary",
     "test:e2e": "NODE_OPTIONS=--preserve-symlinks playwright test"
@@ -34,6 +34,8 @@
     "jsdom": "^30.0.1",
     "monocart-reporter": "^2.13.1",
     "osls": "^3.77.1",
+    "stylelint": "^17.15.0",
+    "stylelint-config-standard": "^40.0.0",
     "typescript": "~6.0.2",
     "typescript-eslint": "^8.70.0",
     "vite": "^8.2.2",
