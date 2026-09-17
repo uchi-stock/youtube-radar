@@ -11,10 +11,10 @@
 - `frontend/`: Googleアカウントでログインし、そのアカウントの登録チャンネル一覧を表示するWebアプリ（React 19 + Vite + TypeScript + Bootstrap 5.3）。バックエンドを介さず、ブラウザから直接Google Identity Services・YouTube Data APIを呼び出す表示専用アプリで、ログアウトすると一覧は消える（定期巡回への組み込みは対象外）
   - ローカルでの動作確認: `cd frontend && npm ci && npm run dev`。Google Cloud Consoleで発行済みのOAuthクライアント（`GOOGLE_OAUTH_CLIENT_ID`）の「承認済みのJavaScript生成元」に`http://localhost:5173`を追加した上で、`frontend/.env.local`に`VITE_GOOGLE_CLIENT_ID=<クライアントID>`を設定する（Client IDは秘密情報ではない）
   - ホスティング: S3 + CloudFront（`frontend/serverless.yml`、OSLS）。`.github/workflows/cd.yml`の`deploy-frontend` jobがビルド・S3同期・CloudFrontキャッシュ無効化まで行う。デプロイ後のURL確認手順は「4. 実行結果の確認」参照
-- 実行基盤: AWS Lambda（EventBridge Schedule）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions・AWS LambdaいずれのデータセンターIPからも、YouTubeの非公式字幕取得エンドポイントがHTTP 429で恒常的にブロックされることが判明した（Issue #16・#19・#24）ため、字幕取得自体は自宅Raspberry Pi（家庭用IP）に委ねる構成にした（Issue #35）
+- 実行基盤: AWS Lambda（EventBridge Schedule）。GitHub Actions（`.github/workflows/cd.yml`）からOSLS（`osls`パッケージ、`backend/serverless.yml`）でデプロイする。GitHub Actions・AWS LambdaいずれのデータセンターIPからも、YouTubeの非公式な字幕取得エンドポイントがHTTP 429で恒常的にブロックされることが判明した（Issue #16・#19・#24）ため、字幕取得自体は自宅Raspberry Pi（家庭用IP）に委ねる構成にした（Issue #35）
   - `discover`関数（`src/lambda.js`、6時間ごと）: YouTube Data APIで新着動画を検知し、DynamoDBに`PENDING`として登録するのみ
-  - `transcriptApi`関数（`src/transcriptApiLambda.js`、API Gateway HTTP API）: 自宅Raspberry Piからの`GET /pending`（未処理動画一覧取得）・`POST /transcripts`（字幕取得結果の送信）を受け付け、字幕を受け取ったら要約〜LINE通知〜DynamoDBの状態更新まで行う。HTTP 429等で取得できなかった場合は`RETRY_WAIT`として次回のRaspberry Piからのポーリングに持ち越す
-- 監視対象チャンネル: 設定ファイルでの手動登録は行わない。frontendにGoogleアカウントでログインすると、そのアカウントのYouTubeチャンネル登録（サブスクライブ）一覧を取得し、`POST /channels`（`backend/src/channelsApiLambda.js`）経由でDynamoDBへ永続化する。`discover`関数はこのDynamoDBのチャンネル一覧（`backend/src/lib/channelsStore.js`）から新着検知を行うため、デプロイ後は一度frontendにログインしてチャンネル一覧を同期させる必要がある（「5. フロントエンド」参照）
+  - `transcriptApi`関数（`src/transcriptApiLambda.js`、API Gateway HTTP API）: 自宅Raspberry Piからの`GET /pending`（未処理の動画一覧取得）・`POST /transcripts`（字幕取得結果の送信）を受け付け、字幕を受け取ったら要約〜LINE通知〜DynamoDBの状態更新まで行う。HTTP 429等で取得できなかった場合は`RETRY_WAIT`として次回のRaspberry Piからのポーリングに持ち越す
+- 監視対象チャンネル: 設定ファイルでの手動登録は行わない。frontendにGoogleアカウントでログインすると、そのアカウントのYouTubeチャンネル登録（サブスクライブ）一覧を取得し、`POST /channels`（`backend/src/channelsApiLambda.js`）経由でDynamoDBへ永続化する。`discover`関数はこのDynamoDBのチャンネル一覧（`backend/src/lib/channelsStore.js`）から新着検知するため、デプロイ後は一度frontendにログインしてチャンネル一覧を同期させる必要がある（「5. フロントエンド」参照）
 - 処理済み動画IDの記録: DynamoDB（`backend/src/lib/dynamoStore.js`。テーブルは`serverless.yml`でコード管理）
 - LINE Messaging API（`LINE_CHANNEL_ACCESS_TOKEN`・`LINE_USER_ID`）は任意設定。未設定の間はLINE通知のみスキップされる（実行結果はCloudWatch Logsで確認する）
 

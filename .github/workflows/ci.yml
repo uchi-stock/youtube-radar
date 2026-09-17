@@ -41,5 +41,10 @@ jobs:
       # 2%を設定する（dev-standards他プロダクトの実例と同じ値）
       enable_duplication_check: true
       duplication_threshold: 2
+      # enable_text_lint/text_lint_paths: textlint（textlint-rule-preset-ja-technical-writing）
+      # によるMarkdown文書チェック（Issue #153）。共有設定（textlint.config.cjs・
+      # .textlintignore）はdev-standardsからsymlink配布済み
+      enable_text_lint: true
+      text_lint_paths: "docs/*.md\nREADME.md\nCLAUDE.md\n.claude/skills/**/*.md"
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}

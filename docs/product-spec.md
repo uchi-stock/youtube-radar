@@ -4,7 +4,7 @@
 
 ## 1. 概要
 
-お気に入りのYouTubeチャンネルをAIが定期巡回し、新着動画を検知する。新着動画について文字起こしを取得し、AIで要約・重要度判定を行い、LINEでユーザーへ通知する。
+お気に入りのYouTubeチャンネルをAIが定期巡回し、新着動画を検知する。新着動画について文字起こしを取得し、AIで要約・重要度判定し、LINEでユーザーへ通知する。
 
 コンセプト: YouTubeを自分で視聴するのではなく、AIに先に視聴・整理させ、重要な情報だけ受け取る。単なるYouTube要約サービスではなく、将来的には「個人向け情報収集エージェント」へ発展させる。
 
@@ -22,7 +22,7 @@
 
 新着動画から文字起こしを取得する。優先順位: (1) YouTubeで提供されている字幕・自動生成字幕、(2) 利用できない場合は別途STTを検討。
 
-注意事項:
+注意事項は以下の通り。
 - 字幕が存在しない動画がある
 - 自動生成字幕が利用可能になるまで時間差がある
 - ライブ動画などは通常動画と扱いが異なる
@@ -38,11 +38,11 @@ MVPでは、まず「取得可能な字幕を利用する」方式を優先す�
 - **重要度**: 5段階
 - **視聴推奨度**: ユーザーにとって実際に動画を見る価値があるかの判定（5段階）
 
-将来的にはユーザーの過去の視聴・保存・興味分野を学習し、パーソナライズ（関連度%）を行う。
+将来的にはユーザーの過去の視聴・保存・興味分野を学習し、パーソナライズ（関連度%）する。
 
 ## 4. LINE通知
 
-AI処理が完了した動画をLINE Messaging APIで通知する。通知イメージ:
+AI処理が完了した動画をLINE Messaging APIで通知する。通知イメージは以下の通り。
 
 ```
 【YouTube新着】
@@ -59,7 +59,7 @@ AI処理が完了した動画をLINE Messaging APIで通知する。通知イメ
 
 ## 5. アーキテクチャ（MVP）
 
-当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。しかしAWS Lambda環境でも同様のHTTP 429が恒常的に発生することが判明した（データセンターIP自体が制限対象と考えられる）ため、字幕取得自体をAWSから行うことを諦め、自宅Raspberry Pi（家庭用IP）に委ねる構成に変更した。動画単位の処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`FAILED`）はDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
+当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式な字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。しかしAWS Lambda環境でも同様のHTTP 429が恒常的に発生することが判明した（データセンターIP自体が制限対象と考えられる）ため、字幕取得自体をAWSから行うことを諦め、自宅Raspberry Pi（家庭用IP）に委ねる構成に変更した。動画単位の処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`FAILED`）はDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
 
 ```
 EventBridge Schedule（6時間ごと）
