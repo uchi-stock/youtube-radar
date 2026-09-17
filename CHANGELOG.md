@@ -1,3 +1,11 @@
+# [1.39.0](https://github.com/uchi-stock/youtube-radar/compare/v1.38.0...v1.39.0) (2026-09-17)
+
+
+### Features
+
+* **backend,pi:** backend/piにESLintによるlintチェックを導入する ([#160](https://github.com/uchi-stock/youtube-radar/issues/160)) ([c03cd59](https://github.com/uchi-stock/youtube-radar/commit/c03cd5925afb39d99254f462a98b5f16a4dbe2c7)), closes [#155](https://github.com/uchi-stock/youtube-radar/issues/155)
+* **ci:** textlintをCIへ導入する ([#161](https://github.com/uchi-stock/youtube-radar/issues/161)) ([0607d74](https://github.com/uchi-stock/youtube-radar/commit/0607d747fc19eb62bd442c3f0d2d4789ae07d61b)), closes [#153](https://github.com/uchi-stock/youtube-radar/issues/153)
+
 # [1.38.0](https://github.com/uchi-stock/youtube-radar/compare/v1.37.0...v1.38.0) (2026-09-13)
 
 
