@@ -1,3 +1,10 @@
+# [1.40.0](https://github.com/uchi-stock/youtube-radar/compare/v1.39.0...v1.40.0) (2026-09-17)
+
+
+### Features
+
+* **frontend:** stylelintをCIへ導入する ([#162](https://github.com/uchi-stock/youtube-radar/issues/162)) ([06d883e](https://github.com/uchi-stock/youtube-radar/commit/06d883e515dddeb17f838730168adc510e50809a)), closes [#154](https://github.com/uchi-stock/youtube-radar/issues/154)
+
 # [1.39.0](https://github.com/uchi-stock/youtube-radar/compare/v1.38.0...v1.39.0) (2026-09-17)
 
 
