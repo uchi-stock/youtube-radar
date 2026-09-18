@@ -9,6 +9,7 @@ import { captureScreenshot } from "./screenshot.js"; // symlink
 const CHANNEL_ID = "UC_test_channel";
 const VIDEO_ID = "test_video_1";
 const VIDEO_DESCRIPTION = "概要欄のテキストです。 https://example.com/detail も参照。";
+const VIDEO_TAG = "ニュース解説";
 
 test("チャンネル選択後、動画一覧・動画詳細が表示される", async ({ page }, testInfo) => {
   await mockGoogleLogin(page, [{ channelId: CHANNEL_ID, title: "テストチャンネル" }]);
@@ -56,6 +57,22 @@ test("チャンネル選択後、動画一覧・動画詳細が表示される",
       }),
     }),
   );
+  // 動画一覧取得後に自社バックエンドAPI（transcriptApiLambda）へ問い合わせる
+  // タグ一括取得・動画処理状態取得も合わせてモックする（Issue #126）。
+  await page.route("**/videos?ids=*", (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ videos: [{ videoId: VIDEO_ID, tags: [VIDEO_TAG] }] }),
+    }),
+  );
+  await page.route(`**/videos/${VIDEO_ID}`, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ videoId: VIDEO_ID, status: "PENDING", summary: null }),
+    }),
+  );
 
   await login(page);
   await expect(page.getByText("登録チャンネル: 1件")).toBeVisible();
@@ -65,6 +82,7 @@ test("チャンネル選択後、動画一覧・動画詳細が表示される",
   await expect(page.getByText("テストチャンネルの最新動画")).toBeVisible();
   await expect(page.getByText("テスト動画のタイトル")).toBeVisible();
   await expect(page.getByText("12,345回視聴・5:09")).toBeVisible();
+  await expect(page.getByRole("button", { name: VIDEO_TAG })).toBeVisible();
   await captureScreenshot(page, testInfo, "video-list", "動画一覧");
 
   await page.getByText("テスト動画のタイトル").click();
@@ -77,8 +95,8 @@ test("チャンネル選択後、動画一覧・動画詳細が表示される",
   await expect(page.getByText("77")).toBeVisible();
   await expect(page.getByText("あり")).toBeVisible();
   await expect(page.getByRole("link", { name: "https://example.com/detail" })).toBeVisible();
-  // VITE_TRANSCRIPT_API_BASE_URLがE2Eビルドでは未設定のため、要約表示は代替の
-  // 案内文で確認する（backendの実データに依存する要約表示自体は対象外とする）。
-  await expect(page.getByText("文字起こしAPIが設定されていません")).toBeVisible();
+  // 動画処理状態はPENDING（モック）で返しているため、処理待ちの案内文で確認する
+  // （要約が実際に生成された状態の表示はbackendの実データに依存するため対象外とする）。
+  await expect(page.getByText("文字起こし処理待ちです")).toBeVisible();
   await captureScreenshot(page, testInfo, "video-detail", "動画詳細");
 });
