@@ -14,6 +14,7 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       complexity: ["error", 15],
+      "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
       "no-unused-vars": "off",
       "@typescript-eslint/no-unused-vars": ["error", { varsIgnorePattern: "^[A-Z_]" }],
     },
