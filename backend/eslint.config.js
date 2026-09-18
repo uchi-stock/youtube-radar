@@ -17,6 +17,7 @@ export default [
       ...js.configs.recommended.rules,
       ...sonarjs.configs.recommended.rules,
       complexity: ["error", 15],
+      "max-lines": ["error", { max: 300, skipBlankLines: true, skipComments: true }],
       "no-unused-vars": ["error", { varsIgnorePattern: "^_" }],
     },
   },
