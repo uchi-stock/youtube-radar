@@ -1,3 +1,10 @@
+# [1.41.0](https://github.com/uchi-stock/youtube-radar/compare/v1.40.0...v1.41.0) (2026-09-18)
+
+
+### Features
+
+* ESLintへファイルサイズ検知（max-lines）を導入する ([#167](https://github.com/uchi-stock/youtube-radar/issues/167)) ([d03e980](https://github.com/uchi-stock/youtube-radar/commit/d03e980bafd2774744e680074606d38837953837)), closes [#166](https://github.com/uchi-stock/youtube-radar/issues/166)
+
 # [1.40.0](https://github.com/uchi-stock/youtube-radar/compare/v1.39.0...v1.40.0) (2026-09-17)
 
 
