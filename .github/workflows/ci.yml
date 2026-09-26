@@ -29,12 +29,12 @@ jobs:
       # e2e_coverage_threshold: frontend-e2e-testジョブ自体のE2Eテストカバレッジ
       # （ユニットテストのcoverage_thresholdとは別軸、Issue #135）。開発共通標準の
       # 最終目標は80%以上だが、一度に到達せずラチェット方式で段階的に引き上げる
-      # （Issue #157）。再訪問時のサイレント再ログイン（Issue #109）・動画一覧取得
-      # エラー表示のgolden pathをE2Eへ追加した結果、実測値がlines 80.45%→82.71%・
-      # statements 81.48%→83.33%・functions 82.56%（変化無し）・
-      # branches 62.50%→68.27%へ向上した。最も低い実測値（branches 68.27%）に
-      # 対しわずかな余裕を持たせた65を設定する
-      e2e_coverage_threshold: 65
+      # （Issue #157）。ユーザーメニューからのアプリリンクQRコード共有
+      # （ShareButton.jsx）golden pathをE2Eへ追加した結果、実測値がlines 82.71%→
+      # 86.18%・statements 83.33%→85.65%・functions 82.56%→87.21%・
+      # branches 68.27%→69.71%へ向上した。最も低い実測値（branches 69.71%）に
+      # 対しわずかな余裕を持たせた67を設定する
+      e2e_coverage_threshold: 67
       # enable_duplication_check: jscpdによるコード重複検知（Issue #134）。dev-standards標準の
       # ラチェット方式（docs/nextjs-static-lambda-pattern.md「jscpd/E2Eカバレッジの閾値設定」）に
       # 従い、duplication_threshold未設定（0、レポート表示のみ）でCIを実行し実測値を確認した
