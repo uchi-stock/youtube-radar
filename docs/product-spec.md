@@ -12,7 +12,7 @@
 
 ### 2.1 お気に入りチャンネル登録
 
-ユーザーが監視対象となるYouTubeチャンネルを登録する。MVPでは管理画面を作らず、frontendへのGoogleログインをトリガーに、そのアカウントがYouTube上でチャンネル登録（サブスクライブ）している一覧を自動取得し、`POST /channels`経由でDynamoDBへ永続化することで監視対象とする（`backend/src/lib/channelsStore.js`）。backend側は継続的なOAuthリフレッシュトークンを持たず、ログイン時に取得したアクセストークンのみを都度検証する。将来的にはWeb UIから個別に登録・除外可能にする。
+ユーザーが監視対象となるYouTubeチャンネルを登録する。MVPでは管理画面を作らず、frontendへのGoogleログインをトリガーに、そのアカウントがYouTube上でチャンネル登録（サブスクライブ）している一覧を自動取得する。取得した一覧は`POST /channels`経由でDynamoDBへ永続化することで監視対象とする（`backend/src/lib/channelsStore.js`）。backend側は継続的なOAuthリフレッシュトークンを持たず、ログイン時に取得したアクセストークンのみを都度検証する。将来的にはWeb UIから個別に登録・除外可能にする。
 
 ### 2.2 新着動画検知
 
@@ -59,7 +59,7 @@ AI処理が完了した動画をLINE Messaging APIで通知する。通知イメ
 
 ## 5. アーキテクチャ（MVP）
 
-当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だったが、GitHub Actionsの共有IPからYouTubeの非公式な字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。しかしAWS Lambda環境でも同様のHTTP 429が恒常的に発生することが判明した（データセンターIP自体が制限対象と考えられる）ため、字幕取得自体をAWSから行うことを諦め、自宅Raspberry Pi（家庭用IP）に委ねる構成に変更した。動画単位の処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`FAILED`）はDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
+当初はGitHub Actionsの定期実行（schedule）のみで完結させる構成だった。ところがGitHub Actionsの共有IPからYouTubeの非公式な字幕取得エンドポイントへのアクセスがレート制限されることが判明したため、実行基盤をAWS Lambda（EventBridge Schedule）へ移行した。しかしAWS Lambda環境でも同様のHTTP 429が恒常的に発生することが判明した（データセンターIP自体が制限対象と考えられる）ため、字幕取得自体をAWSから行うことを諦め、自宅Raspberry Pi（家庭用IP）に委ねる構成に変更した。動画単位の処理状態（`PENDING`/`PROCESSING`/`COMPLETED`/`TRANSCRIPT_NOT_FOUND`/`FAILED`）はDynamoDBで管理する（`docs/standard-tech-stack.md`の標準構成に準拠）。
 
 ```
 EventBridge Schedule（6時間ごと）
