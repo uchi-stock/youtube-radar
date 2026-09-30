@@ -29,13 +29,12 @@ jobs:
       # e2e_coverage_threshold: frontend-e2e-testジョブ自体のE2Eテストカバレッジ
       # （ユニットテストのcoverage_thresholdとは別軸、Issue #135）。開発共通標準の
       # 最終目標は80%以上だが、一度に到達せずラチェット方式で段階的に引き上げる
-      # （Issue #157）。共有E2Eモック（mockGoogleLogin.ts）のチャンネルサムネイルURLを
-      # 空文字列から実値へ変更しChannelList.tsxの画像表示分岐を実カバー化。加えて
-      # ユーザー情報取得失敗時のログイン画面エラー表示golden pathを追加した結果、
-      # 実測値がlines 86.18%→87.85%・statements 85.65%→87.03%・
-      # functions 87.21%（変化無し）・branches 69.71%→72.59%へ向上した。
-      # 最も低い実測値（branches 72.59%）に対しわずかな余裕を持たせた70を設定する
-      e2e_coverage_threshold: 70
+      # （Issue #157）。登録チャンネル一覧が複数ページにまたがるgolden pathを追加し、
+      # youtubeApi.tsのページネーション分岐を実カバー化した結果、実測値が
+      # lines 87.85%→87.85%（変化無し）・statements 87.03%→87.03%（変化無し）・
+      # functions 87.21%（変化無し）・branches 72.59%→73.07%へ向上した。
+      # 最も低い実測値（branches 73.07%）に対しわずかな余裕を持たせた71を設定する
+      e2e_coverage_threshold: 71
       # enable_duplication_check: jscpdによるコード重複検知（Issue #134）。dev-standards標準の
       # ラチェット方式（docs/nextjs-static-lambda-pattern.md「jscpd/E2Eカバレッジの閾値設定」）に
       # 従い、duplication_threshold未設定（0、レポート表示のみ）でCIを実行し実測値を確認した
