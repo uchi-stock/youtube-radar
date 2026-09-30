@@ -1,3 +1,10 @@
+# [1.42.0](https://github.com/uchi-stock/youtube-radar/compare/v1.41.0...v1.42.0) (2026-09-30)
+
+
+### Features
+
+* textlintへドキュメント行数検知ルール（max-lines）を導入する ([#171](https://github.com/uchi-stock/youtube-radar/issues/171)) ([bfca85e](https://github.com/uchi-stock/youtube-radar/commit/bfca85e590310aa9cf21e4b2ca9a771472423a79)), closes [#455](https://github.com/uchi-stock/youtube-radar/issues/455)
+
 # [1.41.0](https://github.com/uchi-stock/youtube-radar/compare/v1.40.0...v1.41.0) (2026-09-18)
 
 
