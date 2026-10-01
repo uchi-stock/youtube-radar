@@ -27,15 +27,14 @@ jobs:
       # （Issue #87）
       enable_e2e_test: true
       # e2e_coverage_threshold: frontend-e2e-testジョブ自体のE2Eテストカバレッジ
-      # （ユニットテストのcoverage_thresholdとは別軸、Issue #135）。開発共通標準の
-      # 最終目標は80%以上だが、一度に到達せずラチェット方式で段階的に引き上げる
-      # （Issue #157）。1時間を超える動画の時:分:秒形式表示・高画質サムネイル優先の
-      # golden pathを追加し、channelVideos.tsのformatDuration/サムネイルURL優先順位
-      # 分岐を実カバー化した結果、実測値がlines 90.65%（変化無し）・
-      # statements 89.81%（変化無し）・functions 88.37%（変化無し）・
-      # branches 78.36%→79.32%へ向上した。最も低い実測値（branches 79.32%）に
-      # 対しわずかな余裕を持たせた78を設定する
-      e2e_coverage_threshold: 78
+      # （ユニットテストのcoverage_thresholdとは別軸、Issue #135）。チャンネル一覧
+      # backend同期・動画タグ取得それぞれの失敗時ベストエフォート分岐（いずれも
+      # エラーをconsole.errorへ記録するのみで処理継続する設計）のgolden pathを追加した
+      # 結果、実測値がlines 90.65%→92.05%・statements 89.81%→91.2%・
+      # functions 88.37%→89.53%・branches 79.32%→80.28%となり、開発共通標準の
+      # 最終目標（4指標とも80%以上）に到達した（Issue #157完了）。実測値ちょうどだと
+      # 些細な分岐追加で即座にCIが赤くなるため、わずかな余裕を持たせた80を設定する
+      e2e_coverage_threshold: 80
       # enable_duplication_check: jscpdによるコード重複検知（Issue #134）。dev-standards標準の
       # ラチェット方式（docs/nextjs-static-lambda-pattern.md「jscpd/E2Eカバレッジの閾値設定」）に
       # 従い、duplication_threshold未設定（0、レポート表示のみ）でCIを実行し実測値を確認した
