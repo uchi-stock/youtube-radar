@@ -1,3 +1,10 @@
+# [1.44.0](https://github.com/uchi-stock/youtube-radar/compare/v1.43.0...v1.44.0) (2026-11-09)
+
+
+### Features
+
+* Renovateによる依存更新の自動化を導入する ([#194](https://github.com/uchi-stock/youtube-radar/issues/194)) ([aa7829b](https://github.com/uchi-stock/youtube-radar/commit/aa7829b931a9d3d1c08bb4f5821b0222730dd619))
+
 # [1.43.0](https://github.com/uchi-stock/youtube-radar/compare/v1.42.1...v1.43.0) (2026-11-09)
 
 
