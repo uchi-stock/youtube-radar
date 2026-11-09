@@ -48,5 +48,10 @@ jobs:
       # .textlintignore）はdev-standardsからsymlink配布済み
       enable_text_lint: true
       text_lint_paths: "docs/*.md\nREADME.md\nCLAUDE.md\n.claude/skills/**/*.md"
+      # enable_architecture_check: dependency-cruiserによるfrontend/backend間の越境import・
+      # 循環依存検知（Issue #186）。共有設定（dependency-cruiser.config.cjs）は
+      # dev-standardsからsymlink配布済みで、ジョブの有効化のみで導入できる。ローカルで
+      # 事前実行し違反0件（53 modules, 52 dependencies cruised）だったことを確認済み
+      enable_architecture_check: true
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
