@@ -1,3 +1,10 @@
+# [1.43.0](https://github.com/uchi-stock/youtube-radar/compare/v1.42.1...v1.43.0) (2026-11-09)
+
+
+### Features
+
+* **ci:** アーキテクチャ境界チェック（dependency-cruiser）を有効化する ([#187](https://github.com/uchi-stock/youtube-radar/issues/187)) ([01b1d2b](https://github.com/uchi-stock/youtube-radar/commit/01b1d2bf038e675bd7e08ad7500b2dca2834102c))
+
 ## [1.42.1](https://github.com/uchi-stock/youtube-radar/compare/v1.42.0...v1.42.1) (2026-11-09)
 
 
