@@ -9,7 +9,7 @@ on:
 
 jobs:
   cd:
-    uses: bamiyanapp/dev-standards/.github/workflows/reusable-cd.yml@v2.17.3
+    uses: bamiyanapp/dev-standards/.github/workflows/reusable-cd.yml@v2.121.0
     with:
       enable_release: true
       enable_shared_release_config: true
@@ -20,8 +20,15 @@ jobs:
     needs: cd
     runs-on: ubuntu-latest
     steps:
+      # cdジョブをトリガーしたgithub.shaはsemantic-releaseによるバージョン更新
+      # （package.json・CHANGELOG.md等）反映前のコミットを指すため、release_commit_sha
+      # （バージョン更新が反映された実際のコミット）をcheckoutする。リリースが
+      # 発生しなかった実行（release_commit_shaが空文字列）ではgithub.shaへフォール
+      # バックする（bamiyanapp/karuta issue #1274と同種の不具合の予防）
       - uses: actions/checkout@v4
-      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.17.3
+        with:
+          ref: ${{ needs.cd.outputs.release_commit_sha || github.sha }}
+      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.121.0
         with:
           working-directory: backend
           node-version: "22"
@@ -44,11 +51,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # frontendがdev-standardsのshared/ui配下をsymlink経由で参照するため、
-      # サブモジュールをチェックアウトしないとビルド時にsymlinkが解決できない
+      # サブモジュールをチェックアウトしないとビルド時にsymlinkが解決できない。
+      # refはdeploy-backend同様にrelease_commit_shaを使う（__APP_VERSION__が
+      # package.jsonのversionを埋め込むため、バージョン更新前のコミットをビルド
+      # すると表示が1つ前のリリースのままになる）
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.cd.outputs.release_commit_sha || github.sha }}
           submodules: true
-      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.17.3
+      - uses: bamiyanapp/dev-standards/.github/actions/deploy-serverless@v2.121.0
         with:
           working-directory: frontend
           node-version: "22"
