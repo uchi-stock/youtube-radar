@@ -1,3 +1,10 @@
+## [1.42.1](https://github.com/uchi-stock/youtube-radar/compare/v1.42.0...v1.42.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **frontend:** Service Worker更新通知バナーの動作検証のためcacheVersionを上げる ([#180](https://github.com/uchi-stock/youtube-radar/issues/180)) ([8a68ce1](https://github.com/uchi-stock/youtube-radar/commit/8a68ce1f3431d6a8a64cdce597d1485804784c4a))
+
 # [1.42.0](https://github.com/uchi-stock/youtube-radar/compare/v1.41.0...v1.42.0) (2026-09-30)
 
 
