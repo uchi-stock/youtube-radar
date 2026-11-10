@@ -7,7 +7,7 @@ on:
 
 jobs:
   ci:
-    uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.29.0
+    uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.121.0
     with:
       # coverage_threshold: backend/frontendはvitest --coverageでcoverage-summary.jsonを
       # 出力する構成のため、dev-standards標準のcheck-coverage-threshold複合actionで80%を
@@ -53,5 +53,11 @@ jobs:
       # dev-standardsからsymlink配布済みで、ジョブの有効化のみで導入できる。ローカルで
       # 事前実行し違反0件（53 modules, 52 dependencies cruised）だったことを確認済み
       enable_architecture_check: true
+      # enable_dependency_risk_summary: Renovate等が作成した依存更新PRに対し、適用/維持
+      # リスク判定（CVE/CVSS/EPSS/KEV・Supply Chainチェック等）とSBOM（CycloneDX）を
+      # 投稿する（Issue #195）。dev-standardsサブモジュール・pinned tagをv2.29.0から
+      # v2.121.0へ更新し導入した。各ステップはcontinue-on-error: trueのためmergeを
+      # ブロックしない
+      enable_dependency_risk_summary: true
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
