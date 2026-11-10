@@ -1,3 +1,10 @@
+# [1.45.0](https://github.com/uchi-stock/youtube-radar/compare/v1.44.0...v1.45.0) (2026-11-10)
+
+
+### Features
+
+* dependency-risk-summaryを導入しCD checkoutのバージョン不整合を修正 ([#196](https://github.com/uchi-stock/youtube-radar/issues/196)) ([516471e](https://github.com/uchi-stock/youtube-radar/commit/516471ee4cce94dcb09216c93ec14e9683ae9f63))
+
 # [1.44.0](https://github.com/uchi-stock/youtube-radar/compare/v1.43.0...v1.44.0) (2026-11-09)
 
 
