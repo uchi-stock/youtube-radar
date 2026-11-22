@@ -1,3 +1,10 @@
+## [1.45.2](https://github.com/uchi-stock/youtube-radar/compare/v1.45.1...v1.45.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* dev-standardsサブモジュール参照をv2.180.1へ更新する ([#213](https://github.com/uchi-stock/youtube-radar/issues/213)) ([cc8d4fc](https://github.com/uchi-stock/youtube-radar/commit/cc8d4fcec246766c30c4a52d0c0c8edecf247462))
+
 ## [1.45.1](https://github.com/uchi-stock/youtube-radar/compare/v1.45.0...v1.45.1) (2026-11-17)
 
 
