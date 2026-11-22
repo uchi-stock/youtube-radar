@@ -7,7 +7,7 @@ on:
 
 jobs:
   ci:
-    uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.141.0
+    uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.180.1
     with:
       # coverage_threshold: backend/frontendはvitest --coverageでcoverage-summary.jsonを
       # 出力する構成のため、dev-standards標準のcheck-coverage-threshold複合actionで80%を
@@ -63,5 +63,8 @@ jobs:
       # shared/lambda配下に追加された共有ヘルパー（sharedSecret.js・dynamoBatch.js・
       # dynamoPagination.js・validation.js等）とshared/api/apiClient.jsを導入するため。
       # 新規のenable_*系CIゲート（IAM Action不一致検知等）は本更新では有効化しない
+      # v2.141.0からv2.180.1へ更新した（Issue #211）。self_refは、本リポジトリが使う
+      # 機能（上記enable_*系）がself_ref必須の新機能群（enable_iam_actions_check等）を
+      # 使っていないため、引き続き省略する
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
