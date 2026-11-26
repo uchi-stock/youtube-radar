@@ -1,3 +1,10 @@
+## [1.45.3](https://github.com/uchi-stock/youtube-radar/compare/v1.45.2...v1.45.3) (2026-11-26)
+
+
+### Bug Fixes
+
+* renovate.jsonへdev-standardsの共有プリセットを継承する ([#220](https://github.com/uchi-stock/youtube-radar/issues/220)) ([6c22597](https://github.com/uchi-stock/youtube-radar/commit/6c22597fa2d532fa94b95d94a2f321d40ccccb8c))
+
 ## [1.45.2](https://github.com/uchi-stock/youtube-radar/compare/v1.45.1...v1.45.2) (2026-11-22)
 
 
