@@ -1,3 +1,96 @@
+## [1.45.3](https://github.com/uchi-stock/youtube-radar/compare/v1.45.2...v1.45.3) (2026-11-26)
+
+
+### Bug Fixes
+
+* renovate.jsonへdev-standardsの共有プリセットを継承する ([#220](https://github.com/uchi-stock/youtube-radar/issues/220)) ([6c22597](https://github.com/uchi-stock/youtube-radar/commit/6c22597fa2d532fa94b95d94a2f321d40ccccb8c))
+
+## [1.45.2](https://github.com/uchi-stock/youtube-radar/compare/v1.45.1...v1.45.2) (2026-11-22)
+
+
+### Bug Fixes
+
+* dev-standardsサブモジュール参照をv2.180.1へ更新する ([#213](https://github.com/uchi-stock/youtube-radar/issues/213)) ([cc8d4fc](https://github.com/uchi-stock/youtube-radar/commit/cc8d4fcec246766c30c4a52d0c0c8edecf247462))
+
+## [1.45.1](https://github.com/uchi-stock/youtube-radar/compare/v1.45.0...v1.45.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* dev-standardsサブモジュール参照をv2.121.0からv2.141.0へ更新する ([#210](https://github.com/uchi-stock/youtube-radar/issues/210)) ([483060e](https://github.com/uchi-stock/youtube-radar/commit/483060e829fdf8a78e52039a1c9aef927ab40aed))
+
+# [1.45.0](https://github.com/uchi-stock/youtube-radar/compare/v1.44.0...v1.45.0) (2026-11-10)
+
+
+### Features
+
+* dependency-risk-summaryを導入しCD checkoutのバージョン不整合を修正 ([#196](https://github.com/uchi-stock/youtube-radar/issues/196)) ([516471e](https://github.com/uchi-stock/youtube-radar/commit/516471ee4cce94dcb09216c93ec14e9683ae9f63))
+
+# [1.44.0](https://github.com/uchi-stock/youtube-radar/compare/v1.43.0...v1.44.0) (2026-11-09)
+
+
+### Features
+
+* Renovateによる依存更新の自動化を導入する ([#194](https://github.com/uchi-stock/youtube-radar/issues/194)) ([aa7829b](https://github.com/uchi-stock/youtube-radar/commit/aa7829b931a9d3d1c08bb4f5821b0222730dd619))
+
+# [1.43.0](https://github.com/uchi-stock/youtube-radar/compare/v1.42.1...v1.43.0) (2026-11-09)
+
+
+### Features
+
+* **ci:** アーキテクチャ境界チェック（dependency-cruiser）を有効化する ([#187](https://github.com/uchi-stock/youtube-radar/issues/187)) ([01b1d2b](https://github.com/uchi-stock/youtube-radar/commit/01b1d2bf038e675bd7e08ad7500b2dca2834102c))
+
+## [1.42.1](https://github.com/uchi-stock/youtube-radar/compare/v1.42.0...v1.42.1) (2026-11-09)
+
+
+### Bug Fixes
+
+* **frontend:** Service Worker更新通知バナーの動作検証のためcacheVersionを上げる ([#180](https://github.com/uchi-stock/youtube-radar/issues/180)) ([8a68ce1](https://github.com/uchi-stock/youtube-radar/commit/8a68ce1f3431d6a8a64cdce597d1485804784c4a))
+
+# [1.42.0](https://github.com/uchi-stock/youtube-radar/compare/v1.41.0...v1.42.0) (2026-09-30)
+
+
+### Features
+
+* textlintへドキュメント行数検知ルール（max-lines）を導入する ([#171](https://github.com/uchi-stock/youtube-radar/issues/171)) ([bfca85e](https://github.com/uchi-stock/youtube-radar/commit/bfca85e590310aa9cf21e4b2ca9a771472423a79)), closes [#455](https://github.com/uchi-stock/youtube-radar/issues/455)
+
+# [1.41.0](https://github.com/uchi-stock/youtube-radar/compare/v1.40.0...v1.41.0) (2026-09-18)
+
+
+### Features
+
+* ESLintへファイルサイズ検知（max-lines）を導入する ([#167](https://github.com/uchi-stock/youtube-radar/issues/167)) ([d03e980](https://github.com/uchi-stock/youtube-radar/commit/d03e980bafd2774744e680074606d38837953837)), closes [#166](https://github.com/uchi-stock/youtube-radar/issues/166)
+
+# [1.40.0](https://github.com/uchi-stock/youtube-radar/compare/v1.39.0...v1.40.0) (2026-09-17)
+
+
+### Features
+
+* **frontend:** stylelintをCIへ導入する ([#162](https://github.com/uchi-stock/youtube-radar/issues/162)) ([06d883e](https://github.com/uchi-stock/youtube-radar/commit/06d883e515dddeb17f838730168adc510e50809a)), closes [#154](https://github.com/uchi-stock/youtube-radar/issues/154)
+
+# [1.39.0](https://github.com/uchi-stock/youtube-radar/compare/v1.38.0...v1.39.0) (2026-09-17)
+
+
+### Features
+
+* **backend,pi:** backend/piにESLintによるlintチェックを導入する ([#160](https://github.com/uchi-stock/youtube-radar/issues/160)) ([c03cd59](https://github.com/uchi-stock/youtube-radar/commit/c03cd5925afb39d99254f462a98b5f16a4dbe2c7)), closes [#155](https://github.com/uchi-stock/youtube-radar/issues/155)
+* **ci:** textlintをCIへ導入する ([#161](https://github.com/uchi-stock/youtube-radar/issues/161)) ([0607d74](https://github.com/uchi-stock/youtube-radar/commit/0607d747fc19eb62bd442c3f0d2d4789ae07d61b)), closes [#153](https://github.com/uchi-stock/youtube-radar/issues/153)
+
+# [1.38.0](https://github.com/uchi-stock/youtube-radar/compare/v1.37.0...v1.38.0) (2026-09-13)
+
+
+### Features
+
+* **ci:** E2Eテストカバレッジの閾値をラチェット値45%に設定する ([#150](https://github.com/uchi-stock/youtube-radar/issues/150)) ([c5252c8](https://github.com/uchi-stock/youtube-radar/commit/c5252c86e27f73afe43b061f5857e1f59ba264b9)), closes [#135](https://github.com/uchi-stock/youtube-radar/issues/135)
+
+# [1.37.0](https://github.com/uchi-stock/youtube-radar/compare/v1.36.0...v1.37.0) (2026-09-13)
+
+
+### Features
+
+* **frontend:** E2Eテストのコードカバレッジ計測を導入する ([#147](https://github.com/uchi-stock/youtube-radar/issues/147)) ([f2cb4d3](https://github.com/uchi-stock/youtube-radar/commit/f2cb4d32254c00920ca137cd6ba4788ec03e86e5)), closes [#135](https://github.com/uchi-stock/youtube-radar/issues/135)
+* **frontend:** PWAのホーム画面アイコンを設定する ([#149](https://github.com/uchi-stock/youtube-radar/issues/149)) ([64c3eda](https://github.com/uchi-stock/youtube-radar/commit/64c3eda28351b3291a0436f4d16ee2d7302aaa63)), closes [#148](https://github.com/uchi-stock/youtube-radar/issues/148)
+
 # [1.36.0](https://github.com/uchi-stock/youtube-radar/compare/v1.35.0...v1.36.0) (2026-09-13)
 
 

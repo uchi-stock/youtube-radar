@@ -2,41 +2,21 @@ import { useEffect, useState } from "react";
 import { fetchChannelVideos, type ChannelVideo } from "./channelVideos";
 import { requestAccessToken, revokeAccessToken } from "./googleAuth";
 import { fetchGoogleUserInfo, type GoogleUserInfo } from "./googleUserInfo";
+import ChannelList from "./ChannelList";
 import formatBuildTime from "./formatBuildTime"; // symlink
+import LoginScreen from "./LoginScreen";
 import { clearLoginPreference, loadLoginPreference, saveLoginPreference } from "./loginPreference";
-import { linkifyText } from "./linkifyText";
 import ServiceWorkerRegistration from "./ServiceWorkerRegistration"; // symlink
-import ShareButton from "./ShareButton"; // symlink
 import { syncChannels } from "./syncChannels";
 import UpdateNotifier from "./UpdateNotifier"; // symlink
-import { fetchVideoDetail, type VideoDetail } from "./videoDetail";
+import UserMenu from "./UserMenu";
+import VideoList, { type VideoDetailEntry } from "./VideoList";
+import { fetchVideoDetail } from "./videoDetail";
 import { fetchVideoTags } from "./videoTags";
 import { fetchSubscribedChannels, type SubscribedChannel } from "./youtubeApi";
 
 type Status = "idle" | "loading" | "loaded" | "error";
 type VideosStatus = "idle" | "loading" | "loaded" | "error";
-
-interface VideoDetailEntry {
-  state: "loading" | "loaded" | "error";
-  detail?: VideoDetail | null;
-  errorMessage?: string;
-}
-
-const PROCESSING_STATUS_LABEL: Record<string, string> = {
-  PENDING: "文字起こし処理待ちです",
-  PROCESSING: "文字起こし処理中です",
-  RETRY_WAIT: "文字起こし処理待ちです",
-  TRANSCRIPT_NOT_FOUND: "字幕が見つかりませんでした",
-  FAILED: "要約に失敗しました",
-};
-
-function formatViewCount(viewCount: number): string {
-  return `${viewCount.toLocaleString("ja-JP")}回視聴`;
-}
-
-function formatCount(count: number): string {
-  return count.toLocaleString("ja-JP");
-}
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined;
 const TRANSCRIPT_API_BASE_URL = import.meta.env.VITE_TRANSCRIPT_API_BASE_URL as string | undefined;
@@ -222,96 +202,21 @@ export default function App() {
           </small>
         </h1>
         {userInfo?.picture && (
-          <div className="position-relative">
-            <button
-              type="button"
-              className="btn p-0 border-0 bg-transparent"
-              onClick={() => setUserMenuOpen((open) => !open)}
-            >
-              <img
-                src={userInfo.picture}
-                alt={userInfo.name}
-                title={userInfo.name}
-                width={40}
-                height={40}
-                className="rounded-circle"
-              />
-            </button>
-            {userMenuOpen && (
-              <ul
-                className="dropdown-menu show position-absolute"
-                // .dropdown-menu-endはBootstrap JS（Popper.js）がdata-bs-popper属性を付与した
-                // 場合のみ右端基準になる仕様のため、独自のReact stateで開閉制御する本実装では
-                // 効かない。明示的なインラインスタイルで右端基準に配置し、画面右へのはみ出しを防ぐ。
-                style={{ right: 0, left: "auto" }}
-              >
-                <li>
-                  <button type="button" className="dropdown-item" onClick={handleLogout}>
-                    ログアウト
-                  </button>
-                </li>
-                <li>
-                  <ShareButton label="アプリリンクを共有" className="dropdown-item" />
-                </li>
-              </ul>
-            )}
-          </div>
+          <UserMenu
+            userInfo={userInfo}
+            isOpen={userMenuOpen}
+            onToggle={() => setUserMenuOpen((open) => !open)}
+            onLogout={handleLogout}
+          />
         )}
       </div>
 
-      {status !== "loaded" && returningUser && (
-        <div className="d-flex align-items-center gap-2 mb-3">
-          <img src={returningUser.picture} alt="" width={40} height={40} className="rounded-circle" />
-          <span>おかえりなさい、{returningUser.name}さん</span>
-        </div>
-      )}
-
       {status !== "loaded" && (
-        <>
-          {!returningUser && (
-            <p>
-              お気に入りのYouTubeチャンネルをAIが定期巡回し、新着動画の文字起こしを要約・重要度判定してLINEへ通知するアプリです。
-              このWebアプリでは、登録チャンネル一覧・最新動画・要約状況を閲覧できます。
-            </p>
-          )}
-          <button type="button" className="btn btn-primary" onClick={handleLogin} disabled={status === "loading"}>
-            {status === "loading" ? "読み込み中..." : returningUser ? "ログインを再開" : "Googleでログイン"}
-          </button>
-        </>
-      )}
-
-      {status === "error" && errorMessage && (
-        <p className="text-danger mt-3" role="alert">
-          {errorMessage}
-        </p>
+        <LoginScreen status={status} returningUser={returningUser} errorMessage={errorMessage} onLogin={handleLogin} />
       )}
 
       {status === "loaded" && !selectedChannel && (
-        <>
-          <p className="mb-3">登録チャンネル: {channels.length}件</p>
-          <ul className="list-group">
-            {channels.map((channel) => (
-              <li key={channel.channelId} className="list-group-item">
-                <button
-                  type="button"
-                  className="btn btn-link p-0 text-decoration-none text-reset d-flex align-items-center gap-2 w-100 text-start"
-                  onClick={() => handleSelectChannel(channel)}
-                >
-                  {channel.thumbnailUrl && (
-                    <img
-                      src={channel.thumbnailUrl}
-                      alt=""
-                      width={32}
-                      height={32}
-                      className="rounded-circle"
-                    />
-                  )}
-                  <span>{channel.title}</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </>
+        <ChannelList channels={channels} onSelectChannel={handleSelectChannel} />
       )}
 
       {status === "loaded" && selectedChannel && (
@@ -331,110 +236,18 @@ export default function App() {
             </p>
           )}
 
-          {videosStatus === "loaded" && (() => {
-            const allTags = Array.from(new Set(Object.values(videoTags).flat())).sort();
-            const filteredVideos =
-              selectedTags.size === 0
-                ? videos
-                : videos.filter((video) => (videoTags[video.videoId] ?? []).some((tag) => selectedTags.has(tag)));
-            return (
-              <>
-                {allTags.length > 0 && (
-                  <div className="d-flex flex-wrap gap-2 mb-3">
-                    {allTags.map((tag) => (
-                      <button
-                        key={tag}
-                        type="button"
-                        className={`btn btn-sm ${selectedTags.has(tag) ? "btn-primary" : "btn-outline-secondary"}`}
-                        onClick={() => handleToggleTag(tag)}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <ul className="list-group">
-                  {filteredVideos.map((video) => {
-                const detailEntry = videoDetails[video.videoId];
-                return (
-                  <li key={video.videoId} className="list-group-item">
-                    <button
-                      type="button"
-                      className="btn btn-link p-0 text-decoration-none text-reset d-flex flex-column align-items-start w-100 text-start"
-                      onClick={() => handleToggleVideo(video.videoId)}
-                    >
-                      {video.thumbnailUrl && (
-                        <img src={video.thumbnailUrl} alt="" className="w-100 rounded" />
-                      )}
-                      <small className="mt-1">{video.title}</small>
-                      <small className="text-muted">
-                        {formatViewCount(video.viewCount)}
-                        {video.duration && `・${video.duration}`}
-                      </small>
-                    </button>
-
-                    {expandedVideoId === video.videoId && (
-                      <div className="mt-2 ps-2 border-start">
-                        <a
-                          href={`https://www.youtube.com/watch?v=${video.videoId}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="d-inline-block small mb-2"
-                        >
-                          YouTubeで視聴
-                        </a>
-                        <dl className="row small mb-2">
-                          <dt className="col-4 col-sm-3">高評価数</dt>
-                          <dd className="col-8 col-sm-9">{formatCount(video.likeCount)}</dd>
-                          <dt className="col-4 col-sm-3">コメント数</dt>
-                          <dd className="col-8 col-sm-9">{formatCount(video.commentCount)}</dd>
-                          <dt className="col-4 col-sm-3">字幕</dt>
-                          <dd className="col-8 col-sm-9">{video.captionAvailable ? "あり" : "なし"}</dd>
-                        </dl>
-                        {video.description && (
-                          <p className="small" style={{ whiteSpace: "pre-wrap" }}>
-                            {linkifyText(video.description)}
-                          </p>
-                        )}
-
-                        {!TRANSCRIPT_API_BASE_URL && (
-                          <small className="text-muted">文字起こしAPIが設定されていません</small>
-                        )}
-
-                        {detailEntry?.state === "loading" && <small className="text-muted">処理状況を確認中...</small>}
-
-                        {detailEntry?.state === "error" && detailEntry.errorMessage && (
-                          <small className="text-danger" role="alert">
-                            {detailEntry.errorMessage}
-                          </small>
-                        )}
-
-                        {detailEntry?.state === "loaded" && detailEntry.detail === null && (
-                          <small className="text-muted">未処理（まだ巡回対象に登録されていません）</small>
-                        )}
-
-                        {detailEntry?.state === "loaded" &&
-                          detailEntry.detail &&
-                          (detailEntry.detail.status === "COMPLETED" && detailEntry.detail.summary ? (
-                            <ul className="mb-0 ps-3">
-                              {detailEntry.detail.summary.summary.map((line, i) => (
-                                <li key={i}>{line}</li>
-                              ))}
-                            </ul>
-                          ) : (
-                            <small className="text-muted">
-                              {PROCESSING_STATUS_LABEL[detailEntry.detail.status] ?? detailEntry.detail.status}
-                            </small>
-                          ))}
-                      </div>
-                    )}
-                  </li>
-                    );
-                  })}
-                </ul>
-              </>
-            );
-          })()}
+          {videosStatus === "loaded" && (
+            <VideoList
+              videos={videos}
+              videoTags={videoTags}
+              selectedTags={selectedTags}
+              onToggleTag={handleToggleTag}
+              expandedVideoId={expandedVideoId}
+              videoDetails={videoDetails}
+              onToggleVideo={handleToggleVideo}
+              transcriptApiBaseUrl={TRANSCRIPT_API_BASE_URL}
+            />
+          )}
         </>
       )}
     </div>

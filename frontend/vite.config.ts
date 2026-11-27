@@ -16,6 +16,13 @@ if (process.env.CI && !process.env.VITE_GOOGLE_CLIENT_ID) {
   process.env.VITE_GOOGLE_CLIENT_ID = 'e2e-dummy-client-id'
 }
 
+// VITE_TRANSCRIPT_API_BASE_URLも同様の理由（上記コメント参照）でCI環境かつ未設定の場合のみ
+// 非秘匿なダミー値を補う。E2E側はpage.route()でこのURL宛のリクエストをモックすることで、
+// タグ表示・タグ絞り込み・動画処理状態表示（Issue #126）をE2Eで検証できるようにする
+if (process.env.CI && !process.env.VITE_TRANSCRIPT_API_BASE_URL) {
+  process.env.VITE_TRANSCRIPT_API_BASE_URL = 'https://e2e-transcript-api.example.test'
+}
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],

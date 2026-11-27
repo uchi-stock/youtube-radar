@@ -9,6 +9,11 @@ jobs:
   ci:
     uses: bamiyanapp/dev-standards/.github/workflows/reusable-ci.yml@v2.186.0
     with:
+      # self_ref: uses:行と同じバージョンを明示する。coverage_threshold（packages入力）
+      # 等の複合action実行型の機能が、self_ref未指定だとチェック自体をスキップして
+      # しまい、かつ最新版ではこれが（警告ではなく）ジョブ失敗として扱われるため必須
+      # （PR #213で発覚）
+      self_ref: v2.186.0
       # coverage_threshold: backend/frontendはvitest --coverageでcoverage-summary.jsonを
       # 出力する構成のため、dev-standards標準のcheck-coverage-threshold複合actionで80%を
       # 下回った場合にCIを失敗させる。piはnode --testのみでdev-standards側もカバレッジ計測が
@@ -26,6 +31,15 @@ jobs:
       # frontend_dirは既定値"frontend"のままでこのリポジトリのfrontendディレクトリと一致する
       # （Issue #87）
       enable_e2e_test: true
+      # e2e_coverage_threshold: frontend-e2e-testジョブ自体のE2Eテストカバレッジ
+      # （ユニットテストのcoverage_thresholdとは別軸、Issue #135）。チャンネル一覧
+      # backend同期・動画タグ取得それぞれの失敗時ベストエフォート分岐（いずれも
+      # エラーをconsole.errorへ記録するのみで処理継続する設計）のgolden pathを追加した
+      # 結果、実測値がlines 90.65%→92.05%・statements 89.81%→91.2%・
+      # functions 88.37%→89.53%・branches 79.32%→80.28%となり、開発共通標準の
+      # 最終目標（4指標とも80%以上）に到達した（Issue #157完了）。実測値ちょうどだと
+      # 些細な分岐追加で即座にCIが赤くなるため、わずかな余裕を持たせた80を設定する
+      e2e_coverage_threshold: 80
       # enable_duplication_check: jscpdによるコード重複検知（Issue #134）。dev-standards標準の
       # ラチェット方式（docs/nextjs-static-lambda-pattern.md「jscpd/E2Eカバレッジの閾値設定」）に
       # 従い、duplication_threshold未設定（0、レポート表示のみ）でCIを実行し実測値を確認した
@@ -34,5 +48,28 @@ jobs:
       # 2%を設定する（dev-standards他プロダクトの実例と同じ値）
       enable_duplication_check: true
       duplication_threshold: 2
+      # enable_text_lint/text_lint_paths: textlint（textlint-rule-preset-ja-technical-writing）
+      # によるMarkdown文書チェック（Issue #153）。共有設定（textlint.config.cjs・
+      # .textlintignore）はdev-standardsからsymlink配布済み
+      enable_text_lint: true
+      text_lint_paths: "docs/*.md\nREADME.md\nCLAUDE.md\n.claude/skills/**/*.md"
+      # enable_architecture_check: dependency-cruiserによるfrontend/backend間の越境import・
+      # 循環依存検知（Issue #186）。共有設定（dependency-cruiser.config.cjs）は
+      # dev-standardsからsymlink配布済みで、ジョブの有効化のみで導入できる。ローカルで
+      # 事前実行し違反0件（53 modules, 52 dependencies cruised）だったことを確認済み
+      enable_architecture_check: true
+      # enable_dependency_risk_summary: Renovate等が作成した依存更新PRに対し、適用/維持
+      # リスク判定（CVE/CVSS/EPSS/KEV・Supply Chainチェック等）とSBOM（CycloneDX）を
+      # 投稿する（Issue #195）。dev-standardsサブモジュール・pinned tagをv2.29.0から
+      # v2.121.0へ更新し導入した。各ステップはcontinue-on-error: trueのためmergeを
+      # ブロックしない
+      enable_dependency_risk_summary: true
+      # dev-standardsサブモジュール・pinned tagをv2.121.0からv2.141.0へ更新した（Issue #209）。
+      # shared/lambda配下に追加された共有ヘルパー（sharedSecret.js・dynamoBatch.js・
+      # dynamoPagination.js・validation.js等）とshared/api/apiClient.jsを導入するため。
+      # 新規のenable_*系CIゲート（IAM Action不一致検知等）は本更新では有効化しない
+      # v2.141.0からv2.180.1へ更新した（Issue #211）。self_refは、本リポジトリが使う
+      # 機能（上記enable_*系）がself_ref必須の新機能群（enable_iam_actions_check等）を
+      # 使っていないため、引き続き省略する
     secrets:
       BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
