@@ -44,7 +44,7 @@ export async function mockGoogleLogin(page: Page, channels: MockChannel[]): Prom
           snippet: {
             resourceId: { channelId: channel.channelId },
             title: channel.title,
-            thumbnails: { default: { url: "" } },
+            thumbnails: { default: { url: "https://example.com/thumbnail.jpg" } },
           },
         })),
       }),

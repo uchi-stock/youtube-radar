@@ -5,7 +5,7 @@
 // アカウントごとに内容が変わる（かつCache StorageのキーはCookie等を考慮しない）ため、
 // Service Workerでのキャッシュ対象には含めない（PWAの更新反映問題の解消に範囲を絞る）。
 self.SW_CONFIG = {
-  cacheVersion: "v1",
+  cacheVersion: "v2",
   precacheUrls: ["/"],
   apiHostnames: [],
 };
