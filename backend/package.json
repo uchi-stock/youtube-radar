@@ -17,6 +17,6 @@
     "eslint-plugin-sonarjs": "^4.2.1",
     "globals": "^17.12.0",
     "osls": "^3.55.0",
-    "vitest": "^2.1.9"
+    "vitest": "^4.0.0"
   }
 }
